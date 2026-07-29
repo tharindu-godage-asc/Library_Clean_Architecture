@@ -1,3 +1,15 @@
 <Solution>
-  <Project Path="Library.Domain/Library.Domain.csproj" Id="4599d3cd-114d-416e-8a60-fe9bb4b93c65" />
+  <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yml" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="Library.Api/Library.Api.csproj" Id="e3d15ffb-66f2-41b6-be0b-10e9f6c68dc4" />
+    <Project Path="Library.Application/Library.Application.csproj" Id="e1213afa-e0ee-433e-9363-8cdd4c341a09" />
+    <Project Path="Library.Domain/Library.Domain.csproj" Id="4599d3cd-114d-416e-8a60-fe9bb4b93c65" />
+    <Project Path="Library.Infrastructure/Library.Infrastructure.csproj" Id="0f41c71f-21a3-4e25-bcc6-26d341336f65" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Library.Application.Tests/Library.Application.Tests.csproj" Id="d8623614-1ee0-446f-a8ea-39f36b2cc792" />
+    <Project Path="Library.Infrastructure.Tests/Library.Infrastructure.Tests.csproj" Id="046e4780-68ba-4cfa-90c3-8f330bb31b18" />
+  </Folder>
 </Solution>
