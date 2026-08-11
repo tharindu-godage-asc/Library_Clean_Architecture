@@ -11,10 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Contracts\Books\" />
-    <Folder Include="Contracts\Members\" />
-    <Folder Include="Contracts\Borrowings\" />
-    <Folder Include="Contracts\Mappings\" />
     <Folder Include="Validators\" />
   </ItemGroup>
 
