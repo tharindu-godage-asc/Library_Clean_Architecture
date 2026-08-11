@@ -23,8 +23,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-//app.MapBookEndpoints();
-//app.MapMemberEndpoints();
-//app.MapBorrowingEndpoints();
+app.MapBookEndpoints();
+app.MapMemberEndpoints();
+app.MapBorrowingEndpoints();
 
 app.Run();
