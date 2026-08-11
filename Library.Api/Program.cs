@@ -1,6 +1,7 @@
 using Library.Application;
 using Library.Infrastructure;
 using Library.Api.Endpoints;
+using Library.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
