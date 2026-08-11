@@ -1,4 +1,6 @@
-﻿using Library.Application.Services;
+﻿using FluentValidation;
+using Library.Application.Services;
+using Library.Application.Validators;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Library.Application
@@ -11,6 +13,7 @@ namespace Library.Application
             services.AddScoped<BookService>();
             services.AddScoped<MemberService>();
             services.AddScoped<BorrowingService>();
+            services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
             return services;
         }
