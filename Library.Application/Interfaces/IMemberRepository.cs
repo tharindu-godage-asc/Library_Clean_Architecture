@@ -1,10 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Library.Domain.Entities;
 
 namespace Library.Application.Interfaces
 {
-    internal class IMemberRepository
+    public interface IMemberRepository
     {
+        Task<Member?> GetByIdAsync(int id);
+
+        Task<Member?> GetByEmailAsync(string email);
+
+        Task<IEnumerable<Member>> GetAllAsync();
+
+        Task AddAsync(Member member);
+
+        void Update(Member member);
+
+        void Delete(Member member);
     }
 }

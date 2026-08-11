@@ -4,7 +4,9 @@ using System.Text;
 
 namespace Library.Application.Interfaces
 {
-    internal class IUnitOfWork
+    public interface IUnitOfWork
     {
+        Task<int> SaveChangesAsync(
+            CancellationToken cancellationToken = default);
     }
 }

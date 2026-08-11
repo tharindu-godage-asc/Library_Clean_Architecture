@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Library.Domain.Exceptions
+namespace Library.Domain.Exceptions;
+
+public class ConflictException : Exception
 {
-    internal class ConflictException
+    public ConflictException(string message)
+        : base(message)
     {
     }
 }
