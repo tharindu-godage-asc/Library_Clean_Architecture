@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Library.Domain.Primitives;
+using Library.Domain.Shared;
 
 namespace Library.Domain.ValueObjects
 {
@@ -16,17 +17,17 @@ namespace Library.Domain.ValueObjects
             Value = value;
         }
 
-        public static Email Create(string value)
+        public static Result<Email> Create(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Email is required.");
+                return Result.Failure<Email>(DomainErrors.Email.Empty);
 
             var normalized = value.Trim().ToLowerInvariant();
 
             if (!Format.IsMatch(normalized))
-                throw new ArgumentException("Email is not in a valid format.");
+                return Result.Failure<Email>(DomainErrors.Email.InvalidFormat);
 
-            return new Email(normalized);
+            return Result.Success(new Email(normalized));
         }
 
         protected override IEnumerable<object?> GetEqualityComponents()

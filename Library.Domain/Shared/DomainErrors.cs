@@ -1,0 +1,69 @@
+namespace Library.Domain.Shared
+{
+    public static class DomainErrors
+    {
+        public static class Email
+        {
+            public static readonly Error Empty = Error.Validation(
+                "Email.Empty",
+                "Email is required.");
+
+            public static readonly Error InvalidFormat = Error.Validation(
+                "Email.InvalidFormat",
+                "Email is not in a valid format.");
+        }
+
+        public static class Book
+        {
+            public static readonly Error TitleRequired = Error.Validation(
+                "Book.TitleRequired",
+                "Title is required.");
+
+            public static readonly Error AuthorRequired = Error.Validation(
+                "Book.AuthorRequired",
+                "Author is required.");
+
+            public static readonly Error IsbnRequired = Error.Validation(
+                "Book.IsbnRequired",
+                "Isbn is required.");
+
+            public static readonly Error PublishedYearInFuture = Error.Validation(
+                "Book.PublishedYearInFuture",
+                "Published year cannot be in the future.");
+
+            public static readonly Error TotalCopiesInvalid = Error.Validation(
+                "Book.TotalCopiesInvalid",
+                "Total copies must be greater than zero.");
+
+            public static readonly Error NoAvailableCopies = Error.Failure(
+                "Book.NoAvailableCopies",
+                "No available copies.");
+
+            public static readonly Error AllCopiesAccountedFor = Error.Failure(
+                "Book.AllCopiesAccountedFor",
+                "All copies already accounted for.");
+        }
+
+        public static class Member
+        {
+            public static readonly Error NameRequired = Error.Validation(
+                "Member.NameRequired",
+                "Name is required.");
+
+            public static readonly Error PhoneNumberRequired = Error.Validation(
+                "Member.PhoneNumberRequired",
+                "Phone number is required.");
+        }
+
+        public static class Borrowing
+        {
+            public static readonly Error InvalidDueDate = Error.Validation(
+                "Borrowing.InvalidDueDate",
+                "Due date must be after borrow date.");
+
+            public static readonly Error AlreadyReturned = Error.Failure(
+                "Borrowing.AlreadyReturned",
+                "Book has already been returned.");
+        }
+    }
+}
