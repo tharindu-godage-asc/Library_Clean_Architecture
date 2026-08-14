@@ -23,7 +23,7 @@ namespace Library.Infrastructure.Repositories
         public async Task<Member?> GetByEmailAsync(string email)
         {
             return await _context.Members
-                .FirstOrDefaultAsync(m => m.Email == email);
+                .FirstOrDefaultAsync(m => m.Email.Value == email);
         }
 
         public async Task<IEnumerable<Member>> GetAllAsync()

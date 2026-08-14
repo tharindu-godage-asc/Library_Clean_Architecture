@@ -31,7 +31,7 @@ namespace Library.Application.Services
         public async Task CreateAsync(Member member)
         {
             var existingMember =
-                await _memberRepository.GetByEmailAsync(member.Email);
+                await _memberRepository.GetByEmailAsync(member.Email.Value);
 
             if (existingMember is not null)
                 throw new ConflictException(

@@ -1,5 +1,6 @@
 ﻿using System;
 using Library.Domain.Primitives;
+using Library.Domain.ValueObjects;
 
 namespace Library.Domain.Entities
 {
@@ -7,7 +8,7 @@ namespace Library.Domain.Entities
     {
         public string Name { get; private set; } = default!;
 
-        public string Email { get; private set; } = default!;
+        public Email Email { get; private set; } = default!;
 
         public string PhoneNumber { get; private set; } = default!;
 
@@ -24,14 +25,11 @@ namespace Library.Domain.Entities
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Name is required.");
 
-            if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentException("Email is required.");
-
             if (string.IsNullOrWhiteSpace(phoneNumber))
                 throw new ArgumentException("Phone number is required.");
 
             Name = name;
-            Email = email;
+            Email = Library.Domain.ValueObjects.Email.Create(email);
             PhoneNumber = phoneNumber;
             IsActive = true;
         }
