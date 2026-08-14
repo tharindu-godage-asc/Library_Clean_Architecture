@@ -1,4 +1,5 @@
 ﻿using Library.Api.Common.Filters;
+using Library.Application.Common;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Services;
@@ -35,12 +36,12 @@ namespace Library.Api.Endpoints
                 CreateBookRequest request,
                 BookService service) =>
             {
-                var book = new Book(
+                var book = Book.Create(
                     request.Title,
                     request.Author,
                     request.Isbn,
                     request.PublishedYear,
-                    request.TotalCopies);
+                    request.TotalCopies).GetValueOrThrow();
 
                 await service.CreateAsync(book);
 

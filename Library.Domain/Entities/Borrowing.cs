@@ -1,5 +1,6 @@
-﻿using Library.Domain.Enums;
+using Library.Domain.Enums;
 using Library.Domain.Primitives;
+using Library.Domain.Shared;
 
 namespace Library.Domain.Entities;
 
@@ -21,16 +22,13 @@ public class Borrowing : Entity
     {
     }
 
-    public Borrowing(
+    private Borrowing(
         Guid bookId,
         Guid memberId,
         DateTime borrowedAt,
         DateTime dueDate)
         : base(Guid.NewGuid())
     {
-        if (dueDate <= borrowedAt)
-            throw new ArgumentException("Due date must be after borrow date.");
-
         BookId = bookId;
         MemberId = memberId;
         BorrowedAt = borrowedAt;
@@ -38,12 +36,25 @@ public class Borrowing : Entity
         Status = BorrowingStatus.Active;
     }
 
-    public void ReturnBook()
+    public static Result<Borrowing> Create(
+        Guid bookId,
+        Guid memberId,
+        DateTime borrowedAt,
+        DateTime dueDate)
+    {
+        if (dueDate <= borrowedAt)
+            return Result.Failure<Borrowing>(DomainErrors.Borrowing.InvalidDueDate);
+
+        return Result.Success(new Borrowing(bookId, memberId, borrowedAt, dueDate));
+    }
+
+    public Result ReturnBook()
     {
         if (Status == BorrowingStatus.Returned)
-            throw new InvalidOperationException("Book has already been returned.");
+            return Result.Failure(DomainErrors.Borrowing.AlreadyReturned);
 
         ReturnedAt = DateTime.UtcNow;
         Status = BorrowingStatus.Returned;
+        return Result.Success();
     }
 }

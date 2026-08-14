@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using Library.Domain.Primitives;
+using Library.Domain.Shared;
 
 namespace Library.Domain.Entities
 {
@@ -19,7 +20,7 @@ namespace Library.Domain.Entities
 
         private Book() : base(Guid.Empty) { } // Required by EF Core
 
-        public Book(
+        private Book(
             string title,
             string author,
             string isbn,
@@ -27,43 +28,55 @@ namespace Library.Domain.Entities
             int totalCopies)
             : base(Guid.NewGuid())
         {
-            if (string.IsNullOrWhiteSpace(title))
-                throw new ArgumentException("Title is required.");
-
-            if (string.IsNullOrWhiteSpace(author))
-                throw new ArgumentException("Author is required.");
-
-            if (string.IsNullOrWhiteSpace(isbn))
-                throw new ArgumentException("Isbn is required.");
-
-            if (publishedYear > DateTime.UtcNow.Year)
-                throw new ArgumentException("Published year cannot be in the future.");
-
-            if (totalCopies <= 0)
-                throw new ArgumentException("Total copies must be greater than zero.");
-
             Title = title;
             Author = author;
             Isbn = isbn;
             PublishedYear = publishedYear;
-            TotalCopies = totalCopies; // Fixed: assigned TotalCopies
+            TotalCopies = totalCopies;
             AvailableCopies = totalCopies;
         }
 
-        public void BorrowCopy()
+        public static Result<Book> Create(
+            string title,
+            string author,
+            string isbn,
+            int publishedYear,
+            int totalCopies)
         {
-            if (AvailableCopies <= 0)
-                throw new InvalidOperationException("No available copies.");
+            if (string.IsNullOrWhiteSpace(title))
+                return Result.Failure<Book>(DomainErrors.Book.TitleRequired);
 
-            AvailableCopies--;
+            if (string.IsNullOrWhiteSpace(author))
+                return Result.Failure<Book>(DomainErrors.Book.AuthorRequired);
+
+            if (string.IsNullOrWhiteSpace(isbn))
+                return Result.Failure<Book>(DomainErrors.Book.IsbnRequired);
+
+            if (publishedYear > DateTime.UtcNow.Year)
+                return Result.Failure<Book>(DomainErrors.Book.PublishedYearInFuture);
+
+            if (totalCopies <= 0)
+                return Result.Failure<Book>(DomainErrors.Book.TotalCopiesInvalid);
+
+            return Result.Success(new Book(title, author, isbn, publishedYear, totalCopies));
         }
 
-        public void ReturnCopy()
+        public Result BorrowCopy()
+        {
+            if (AvailableCopies <= 0)
+                return Result.Failure(DomainErrors.Book.NoAvailableCopies);
+
+            AvailableCopies--;
+            return Result.Success();
+        }
+
+        public Result ReturnCopy()
         {
             if (AvailableCopies >= TotalCopies)
-                throw new InvalidOperationException("All copies already accounted for.");
+                return Result.Failure(DomainErrors.Book.AllCopiesAccountedFor);
 
             AvailableCopies++;
+            return Result.Success();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Library.Application.Interfaces;
+﻿using Library.Application.Common;
+using Library.Application.Interfaces;
 using Library.Domain.Entities;
 using Library.Domain.Exceptions;
 
@@ -43,13 +44,13 @@ namespace Library.Application.Services
                 throw new BusinessRuleException(
                     "Member borrowing limit exceeded.");
 
-            book.BorrowCopy();
+            book.BorrowCopy().ThrowIfFailure();
 
-            var borrowing = new Borrowing(
+            var borrowing = Borrowing.Create(
                 bookId,
                 memberId,
                 DateTime.UtcNow,
-                DateTime.UtcNow.AddDays(14));
+                DateTime.UtcNow.AddDays(14)).GetValueOrThrow();
 
             await _borrowingRepository.AddAsync(borrowing);
 
@@ -70,9 +71,9 @@ namespace Library.Application.Services
                 await _bookRepository.GetByIdAsync(borrowing.BookId)
                 ?? throw new NotFoundException("Book not found.");
 
-            borrowing.ReturnBook();
+            borrowing.ReturnBook().ThrowIfFailure();
 
-            book.ReturnCopy();
+            book.ReturnCopy().ThrowIfFailure();
 
             _borrowingRepository.Update(borrowing);
 

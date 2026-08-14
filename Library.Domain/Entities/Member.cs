@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using Library.Domain.Primitives;
+using Library.Domain.Shared;
 using Library.Domain.ValueObjects;
 
 namespace Library.Domain.Entities
@@ -16,22 +17,35 @@ namespace Library.Domain.Entities
 
         private Member() : base(Guid.Empty) { } // Required by EF Core
 
-        public Member(
+        private Member(
             string name,
-            string email,
+            Library.Domain.ValueObjects.Email email,
             string phoneNumber)
             : base(Guid.NewGuid())
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Name is required.");
-
-            if (string.IsNullOrWhiteSpace(phoneNumber))
-                throw new ArgumentException("Phone number is required.");
-
             Name = name;
-            Email = Library.Domain.ValueObjects.Email.Create(email);
+            Email = email;
             PhoneNumber = phoneNumber;
             IsActive = true;
+        }
+
+        public static Result<Member> Create(
+            string name,
+            string email,
+            string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return Result.Failure<Member>(DomainErrors.Member.NameRequired);
+
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return Result.Failure<Member>(DomainErrors.Member.PhoneNumberRequired);
+
+            var emailResult = Library.Domain.ValueObjects.Email.Create(email);
+
+            if (emailResult.IsFailure)
+                return Result.Failure<Member>(emailResult.Error);
+
+            return Result.Success(new Member(name, emailResult.Value, phoneNumber));
         }
 
         public void Activate()

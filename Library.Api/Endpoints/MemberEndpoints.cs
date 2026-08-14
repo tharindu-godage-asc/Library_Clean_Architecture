@@ -1,4 +1,5 @@
 ﻿using Library.Api.Common.Filters;
+using Library.Application.Common;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Contracts.Members;
 using Library.Application.Services;
@@ -35,10 +36,10 @@ namespace Library.Api.Endpoints
                 CreateMemberRequest request,
                 MemberService service) =>
             {
-                var member = new Member(
+                var member = Member.Create(
                     request.Name,
                     request.Email,
-                    request.PhoneNumber);
+                    request.PhoneNumber).GetValueOrThrow();
 
                 await service.CreateAsync(member);
 

@@ -1,4 +1,5 @@
 ﻿using Library.Application.Books.CreateBook;
+using Library.Application.Common;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
@@ -29,12 +30,12 @@ public class CreateBookHandler
             throw new ConflictException(
                 "A book with this ISBN already exists.");
 
-        var book = new Book(
+        var book = Book.Create(
             command.Title,
             command.Author,
             command.Isbn,
             command.PublishedYear,
-            command.TotalCopies);
+            command.TotalCopies).GetValueOrThrow();
 
         await _bookRepository.AddAsync(book);
 
