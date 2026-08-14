@@ -22,7 +22,7 @@ namespace Library.Application.Services
             return await _bookRepository.GetAllAsync();
         }
 
-        public async Task<Book> GetByIdAsync(int id)
+        public async Task<Book> GetByIdAsync(Guid id)
         {
             return await _bookRepository.GetByIdAsync(id)
                    ?? throw new NotFoundException("Book not found.");
@@ -39,7 +39,7 @@ namespace Library.Application.Services
             await _unitOfWork.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var book = await _bookRepository.GetByIdAsync(id)
                        ?? throw new NotFoundException("Book not found.");

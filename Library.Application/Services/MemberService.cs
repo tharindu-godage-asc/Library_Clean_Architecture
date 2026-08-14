@@ -22,7 +22,7 @@ namespace Library.Application.Services
             return await _memberRepository.GetAllAsync();
         }
 
-        public async Task<Member> GetByIdAsync(int id)
+        public async Task<Member> GetByIdAsync(Guid id)
         {
             return await _memberRepository.GetByIdAsync(id)
                    ?? throw new NotFoundException("Member not found.");
@@ -41,7 +41,7 @@ namespace Library.Application.Services
             await _unitOfWork.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var member = await _memberRepository.GetByIdAsync(id)
                          ?? throw new NotFoundException("Member not found.");

@@ -4,13 +4,13 @@ namespace Library.Application.Interfaces
 {
     public interface IBorrowingRepository
     {
-        Task<Borrowing?> GetByIdAsync(int id);
+        Task<Borrowing?> GetByIdAsync(Guid id);
 
         Task<IEnumerable<Borrowing>> GetAllAsync();
 
         Task<IEnumerable<Borrowing>> GetActiveBorrowingsAsync();
 
-        Task<int> CountActiveForMemberAsync(int memberId);
+        Task<int> CountActiveForMemberAsync(Guid memberId);
 
         Task AddAsync(Borrowing borrowing);
 

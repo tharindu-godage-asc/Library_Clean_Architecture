@@ -14,7 +14,7 @@ namespace Library.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Member?> GetByIdAsync(int id)
+        public async Task<Member?> GetByIdAsync(Guid id)
         {
             return await _context.Members
                 .FirstOrDefaultAsync(m => m.Id == id);

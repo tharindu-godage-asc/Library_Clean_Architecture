@@ -1,11 +1,10 @@
 ﻿using System;
+using Library.Domain.Primitives;
 
 namespace Library.Domain.Entities
 {
-    public class Book
+    public class Book : Entity
     {
-        public int Id { get; private set; }
-
         public string Title { get; private set; } = default!;
 
         public string Author { get; private set; } = default!;
@@ -18,7 +17,7 @@ namespace Library.Domain.Entities
 
         public int AvailableCopies { get; private set; }
 
-        private Book() { } // Required by EF Core
+        private Book() : base(Guid.Empty) { } // Required by EF Core
 
         public Book(
             string title,
@@ -26,6 +25,7 @@ namespace Library.Domain.Entities
             string isbn,
             int publishedYear,
             int totalCopies)
+            : base(Guid.NewGuid())
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("Title is required.");

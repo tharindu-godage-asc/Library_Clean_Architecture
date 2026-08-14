@@ -15,7 +15,7 @@ namespace Library.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Borrowing?> GetByIdAsync(int id)
+        public async Task<Borrowing?> GetByIdAsync(Guid id)
         {
             return await _context.Borrowings
                 .FirstOrDefaultAsync(b => b.Id == id);
@@ -33,7 +33,7 @@ namespace Library.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<int> CountActiveForMemberAsync(int memberId)
+        public async Task<int> CountActiveForMemberAsync(Guid memberId)
         {
             return await _context.Borrowings.CountAsync(
                 b => b.MemberId == memberId &&

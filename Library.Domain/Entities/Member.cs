@@ -1,11 +1,10 @@
 ﻿using System;
+using Library.Domain.Primitives;
 
 namespace Library.Domain.Entities
 {
-    public class Member
+    public class Member : Entity
     {
-        public int Id { get; private set; }
-
         public string Name { get; private set; } = default!;
 
         public string Email { get; private set; } = default!;
@@ -14,12 +13,13 @@ namespace Library.Domain.Entities
 
         public bool IsActive { get; private set; } = true;
 
-        private Member() { } // Required by EF Core
+        private Member() : base(Guid.Empty) { } // Required by EF Core
 
         public Member(
             string name,
             string email,
             string phoneNumber)
+            : base(Guid.NewGuid())
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Name is required.");

@@ -24,8 +24,8 @@ namespace Library.Application.Services
         }
 
         public async Task<Borrowing> BorrowBookAsync(
-            int memberId,
-            int bookId)
+            Guid memberId,
+            Guid bookId)
         {
             var member = await _memberRepository.GetByIdAsync(memberId)
                 ?? throw new NotFoundException("Member not found.");
@@ -60,7 +60,7 @@ namespace Library.Application.Services
             return borrowing;
         }
 
-        public async Task ReturnBookAsync(int borrowingId)
+        public async Task ReturnBookAsync(Guid borrowingId)
         {
             var borrowing =
                 await _borrowingRepository.GetByIdAsync(borrowingId)
@@ -86,7 +86,7 @@ namespace Library.Application.Services
             return await _borrowingRepository.GetAllAsync();
         }
 
-        public async Task<Borrowing> GetByIdAsync(int id)
+        public async Task<Borrowing> GetByIdAsync(Guid id)
         {
             return await _borrowingRepository.GetByIdAsync(id)
                 ?? throw new NotFoundException("Borrowing record not found.");

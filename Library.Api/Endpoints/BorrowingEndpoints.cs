@@ -21,8 +21,8 @@ namespace Library.Api.Endpoints
                     borrowings.Select(b => b.ToResponse()));
             });
 
-            group.MapGet("/{id:int}", async (
-                int id,
+            group.MapGet("/{id:guid}", async (
+                Guid id,
                 BorrowingService service) =>
             {
                 var borrowing = await service.GetByIdAsync(id);
@@ -45,8 +45,8 @@ namespace Library.Api.Endpoints
             })
             .AddEndpointFilter<ValidationFilter<CreateBorrowingRequest>>();
 
-            group.MapPost("/{id:int}/return", async (
-                int id,
+            group.MapPost("/{id:guid}/return", async (
+                Guid id,
                 BorrowingService service) =>
             {
                 await service.ReturnBookAsync(id);

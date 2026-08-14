@@ -22,8 +22,8 @@ namespace Library.Api.Endpoints
                     members.Select(m => m.ToResponse()));
             });
 
-            group.MapGet("/{id:int}", async (
-                int id,
+            group.MapGet("/{id:guid}", async (
+                Guid id,
                 MemberService service) =>
             {
                 var member = await service.GetByIdAsync(id);

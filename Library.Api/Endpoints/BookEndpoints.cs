@@ -22,8 +22,8 @@ namespace Library.Api.Endpoints
                     books.Select(b => b.ToResponse()));
             });
 
-            group.MapGet("/{id:int}", async (
-                int id,
+            group.MapGet("/{id:guid}", async (
+                Guid id,
                 BookService service) =>
             {
                 var book = await service.GetByIdAsync(id);
