@@ -14,6 +14,8 @@ namespace Library.Application
             services.AddScoped<MemberService>();
             services.AddScoped<BorrowingService>();
             services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+            services.AddMediatR(cfg =>
+                cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
 
             return services;
         }

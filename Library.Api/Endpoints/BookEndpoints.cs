@@ -1,9 +1,11 @@
 ﻿using Library.Api.Common.Filters;
-using Library.Application.Common;
+using Library.Api.Common.Http;
+using Library.Application.Books.Commands.CreateBook;
+using Library.Application.Books.Queries.GetBookById;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Services;
-using Library.Domain.Entities;
+using MediatR;
 
 namespace Library.Api.Endpoints
 {
@@ -25,29 +27,31 @@ namespace Library.Api.Endpoints
 
             group.MapGet("/{id:guid}", async (
                 Guid id,
-                BookService service) =>
+                ISender sender) =>
             {
-                var book = await service.GetByIdAsync(id);
+                var result = await sender.Send(new GetBookByIdQuery(id));
 
-                return Results.Ok(book.ToResponse());
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
             });
 
             group.MapPost("/", async (
                 CreateBookRequest request,
-                BookService service) =>
+                ISender sender) =>
             {
-                var book = Book.Create(
+                var command = new CreateBookCommand(
                     request.Title,
                     request.Author,
                     request.Isbn,
                     request.PublishedYear,
-                    request.TotalCopies).GetValueOrThrow();
+                    request.TotalCopies);
 
-                await service.CreateAsync(book);
+                var result = await sender.Send(command);
 
-                return Results.Created(
-                    $"/api/books/{book.Id}",
-                    book.ToResponse());
+                return result.IsSuccess
+                    ? Results.Created($"/api/books/{result.Value.Id}", result.Value)
+                    : result.ToProblemDetails();
             })
             .AddEndpointFilter<ValidationFilter<CreateBookRequest>>();
 

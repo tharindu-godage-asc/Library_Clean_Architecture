@@ -42,6 +42,14 @@ namespace Library.Domain.Shared
             public static readonly Error AllCopiesAccountedFor = Error.Failure(
                 "Book.AllCopiesAccountedFor",
                 "All copies already accounted for.");
+
+            public static readonly Error IsbnAlreadyExists = Error.Conflict(
+                "Book.IsbnAlreadyExists",
+                "A book with this ISBN already exists.");
+
+            public static Error NotFound(Guid id) => Error.NotFound(
+                "Book.NotFound",
+                $"The book with Id = '{id}' was not found.");
         }
 
         public static class Member
