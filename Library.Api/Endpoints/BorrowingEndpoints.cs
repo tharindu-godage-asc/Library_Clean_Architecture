@@ -17,18 +17,21 @@ namespace Library.Api.Endpoints
             var group = app.MapGroup("/api/borrowings")
                 .WithTags("Borrowings");
 
-            group.MapGet("/", async (ISender sender) =>
+            group.MapGet("/", async (
+                ISender sender,
+                CancellationToken cancellationToken) =>
             {
-                var borrowings = await sender.Send(new GetAllBorrowingsQuery());
+                var borrowings = await sender.Send(new GetAllBorrowingsQuery(), cancellationToken);
 
                 return Results.Ok(borrowings);
             });
 
             group.MapGet("/{id:guid}", async (
                 Guid id,
-                ISender sender) =>
+                ISender sender,
+                CancellationToken cancellationToken) =>
             {
-                var result = await sender.Send(new GetBorrowingByIdQuery(id));
+                var result = await sender.Send(new GetBorrowingByIdQuery(id), cancellationToken);
 
                 return result.IsSuccess
                     ? Results.Ok(result.Value)
@@ -37,13 +40,14 @@ namespace Library.Api.Endpoints
 
             group.MapPost("/", async (
                 CreateBorrowingRequest request,
-                ISender sender) =>
+                ISender sender,
+                CancellationToken cancellationToken) =>
             {
                 var command = new BorrowBookCommand(
                     request.MemberId,
                     request.BookId);
 
-                var result = await sender.Send(command);
+                var result = await sender.Send(command, cancellationToken);
 
                 return result.IsSuccess
                     ? Results.Created($"/api/borrowings/{result.Value.Id}", result.Value)
@@ -53,9 +57,10 @@ namespace Library.Api.Endpoints
 
             group.MapPost("/{id:guid}/return", async (
                 Guid id,
-                ISender sender) =>
+                ISender sender,
+                CancellationToken cancellationToken) =>
             {
-                var result = await sender.Send(new ReturnBookCommand(id));
+                var result = await sender.Send(new ReturnBookCommand(id), cancellationToken);
 
                 return result.IsSuccess
                     ? Results.NoContent()

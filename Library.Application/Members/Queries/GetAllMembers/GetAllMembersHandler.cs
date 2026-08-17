@@ -19,7 +19,7 @@ namespace Library.Application.Members.Queries.GetAllMembers
             GetAllMembersQuery request,
             CancellationToken cancellationToken)
         {
-            var members = await _memberRepository.GetAllAsync();
+            var members = await _memberRepository.GetAllAsync(cancellationToken);
 
             return members.Select(m => m.ToResponse());
         }

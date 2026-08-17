@@ -20,7 +20,7 @@ namespace Library.Application.Members.Queries.GetMemberById
             GetMemberByIdQuery request,
             CancellationToken cancellationToken)
         {
-            var member = await _memberRepository.GetByIdAsync(request.Id);
+            var member = await _memberRepository.GetByIdAsync(request.Id, cancellationToken);
 
             return member is null
                 ? Result.Failure<MemberResponse>(DomainErrors.Member.NotFound(request.Id))

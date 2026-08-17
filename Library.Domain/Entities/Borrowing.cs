@@ -36,7 +36,9 @@ public class Borrowing : Entity
         Status = BorrowingStatus.Active;
     }
 
-    public static Result<Borrowing> Create(
+    public const int LoanPeriodDays = 14;
+
+    internal static Result<Borrowing> Create(
         Guid bookId,
         Guid memberId,
         DateTime borrowedAt,
@@ -48,7 +50,13 @@ public class Borrowing : Entity
         return Result.Success(new Borrowing(bookId, memberId, borrowedAt, dueDate));
     }
 
-    public Result ReturnBook()
+    internal static Result<Borrowing> CreateForLoan(
+        Guid bookId,
+        Guid memberId,
+        DateTime borrowedAt)
+        => Create(bookId, memberId, borrowedAt, borrowedAt.AddDays(LoanPeriodDays));
+
+    internal Result ReturnBook()
     {
         if (Status == BorrowingStatus.Returned)
             return Result.Failure(DomainErrors.Borrowing.AlreadyReturned);

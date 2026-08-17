@@ -10,9 +10,6 @@ namespace Library.Application.Borrowings.Commands.BorrowBook
     public sealed class BorrowBookHandler
         : IRequestHandler<BorrowBookCommand, Result<BorrowingResponse>>
     {
-        private const int MaxActiveBorrowingsPerMember = 3;
-        private static readonly TimeSpan LoanPeriod = TimeSpan.FromDays(14);
-
         private readonly IBookRepository _bookRepository;
         private readonly IMemberRepository _memberRepository;
         private readonly IBorrowingRepository _borrowingRepository;
@@ -34,46 +31,42 @@ namespace Library.Application.Borrowings.Commands.BorrowBook
             BorrowBookCommand request,
             CancellationToken cancellationToken)
         {
-            var member = await _memberRepository.GetByIdAsync(request.MemberId);
+            var member = await _memberRepository.GetByIdAsync(request.MemberId, cancellationToken);
 
             if (member is null)
                 return Result.Failure<BorrowingResponse>(DomainErrors.Member.NotFound(request.MemberId));
 
-            var book = await _bookRepository.GetByIdAsync(request.BookId);
+            var book = await _bookRepository.GetByIdAsync(request.BookId, cancellationToken);
 
             if (book is null)
                 return Result.Failure<BorrowingResponse>(DomainErrors.Book.NotFound(request.BookId));
 
-            if (!member.IsActive)
-                return Result.Failure<BorrowingResponse>(DomainErrors.Member.Inactive);
+            var activeBorrowings = await _borrowingRepository.CountActiveForMemberAsync(request.MemberId, cancellationToken);
 
-            var activeBorrowings = await _borrowingRepository.CountActiveForMemberAsync(request.MemberId);
+            var eligibility = member.EnsureCanBorrow(activeBorrowings);
 
-            if (activeBorrowings >= MaxActiveBorrowingsPerMember)
-                return Result.Failure<BorrowingResponse>(DomainErrors.Borrowing.LimitExceeded);
+            if (eligibility.IsFailure)
+                return Result.Failure<BorrowingResponse>(eligibility.Error);
 
             var borrowCopyResult = book.BorrowCopy();
 
             if (borrowCopyResult.IsFailure)
                 return Result.Failure<BorrowingResponse>(borrowCopyResult.Error);
 
-            var borrowedAt = DateTime.UtcNow;
-
-            var borrowingResult = Borrowing.Create(
+            var borrowingResult = Borrowing.CreateForLoan(
                 request.BookId,
                 request.MemberId,
-                borrowedAt,
-                borrowedAt.Add(LoanPeriod));
+                DateTime.UtcNow);
 
             if (borrowingResult.IsFailure)
                 return Result.Failure<BorrowingResponse>(borrowingResult.Error);
 
             var borrowing = borrowingResult.Value;
 
-            await _borrowingRepository.AddAsync(borrowing);
+            await _borrowingRepository.AddAsync(borrowing, cancellationToken);
             _bookRepository.Update(book);
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result.Success(borrowing.ToResponse());
         }

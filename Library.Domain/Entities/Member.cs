@@ -29,7 +29,9 @@ namespace Library.Domain.Entities
             IsActive = true;
         }
 
-        public static Result<Member> Create(
+        public const int MaxActiveBorrowings = 3;
+
+        internal static Result<Member> Create(
             string name,
             string email,
             string phoneNumber)
@@ -48,14 +50,25 @@ namespace Library.Domain.Entities
             return Result.Success(new Member(name, emailResult.Value, phoneNumber));
         }
 
-        public void Activate()
+        internal void Activate()
         {
             IsActive = true;
         }
 
-        public void Deactivate()
+        internal void Deactivate()
         {
             IsActive = false;
+        }
+
+        internal Result EnsureCanBorrow(int activeBorrowingsCount)
+        {
+            if (!IsActive)
+                return Result.Failure(DomainErrors.Member.Inactive);
+
+            if (activeBorrowingsCount >= MaxActiveBorrowings)
+                return Result.Failure(DomainErrors.Borrowing.LimitExceeded);
+
+            return Result.Success();
         }
     }
 }

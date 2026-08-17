@@ -17,9 +17,11 @@ namespace Library.Api.Endpoints
             var group = app.MapGroup("/api/books")
                 .WithTags("Books");
 
-            group.MapGet("/", async (BookService service) =>
+            group.MapGet("/", async (
+                BookService service,
+                CancellationToken cancellationToken) =>
             {
-                var books = await service.GetAllAsync();
+                var books = await service.GetAllAsync(cancellationToken);
 
                 return Results.Ok(
                     books.Select(b => b.ToResponse()));
@@ -27,9 +29,10 @@ namespace Library.Api.Endpoints
 
             group.MapGet("/{id:guid}", async (
                 Guid id,
-                ISender sender) =>
+                ISender sender,
+                CancellationToken cancellationToken) =>
             {
-                var result = await sender.Send(new GetBookByIdQuery(id));
+                var result = await sender.Send(new GetBookByIdQuery(id), cancellationToken);
 
                 return result.IsSuccess
                     ? Results.Ok(result.Value)
@@ -38,7 +41,8 @@ namespace Library.Api.Endpoints
 
             group.MapPost("/", async (
                 CreateBookRequest request,
-                ISender sender) =>
+                ISender sender,
+                CancellationToken cancellationToken) =>
             {
                 var command = new CreateBookCommand(
                     request.Title,
@@ -47,7 +51,7 @@ namespace Library.Api.Endpoints
                     request.PublishedYear,
                     request.TotalCopies);
 
-                var result = await sender.Send(command);
+                var result = await sender.Send(command, cancellationToken);
 
                 return result.IsSuccess
                     ? Results.Created($"/api/books/{result.Value.Id}", result.Value)

@@ -1,4 +1,4 @@
-﻿using Library.Application.Interfaces;
+using Library.Application.Interfaces;
 using Library.Domain.Entities;
 using Library.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -14,26 +14,26 @@ namespace Library.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Book?> GetByIdAsync(Guid id)
+        public async Task<Book?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _context.Books
-                .FirstOrDefaultAsync(b => b.Id == id);
+                .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
         }
 
-        public async Task<Book?> GetByIsbnAsync(string isbn)
+        public async Task<Book?> GetByIsbnAsync(string isbn, CancellationToken cancellationToken = default)
         {
             return await _context.Books
-                .FirstOrDefaultAsync(b => b.Isbn == isbn);
+                .FirstOrDefaultAsync(b => b.Isbn == isbn, cancellationToken);
         }
 
-        public async Task<IEnumerable<Book>> GetAllAsync()
+        public async Task<IEnumerable<Book>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            return await _context.Books.ToListAsync();
+            return await _context.Books.ToListAsync(cancellationToken);
         }
 
-        public async Task AddAsync(Book book)
+        public async Task AddAsync(Book book, CancellationToken cancellationToken = default)
         {
-            await _context.Books.AddAsync(book);
+            await _context.Books.AddAsync(book, cancellationToken);
         }
 
         public void Update(Book book)

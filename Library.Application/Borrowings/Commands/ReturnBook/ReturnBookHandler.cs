@@ -24,12 +24,12 @@ namespace Library.Application.Borrowings.Commands.ReturnBook
             ReturnBookCommand request,
             CancellationToken cancellationToken)
         {
-            var borrowing = await _borrowingRepository.GetByIdAsync(request.BorrowingId);
+            var borrowing = await _borrowingRepository.GetByIdAsync(request.BorrowingId, cancellationToken);
 
             if (borrowing is null)
                 return Result.Failure(DomainErrors.Borrowing.NotFound(request.BorrowingId));
 
-            var book = await _bookRepository.GetByIdAsync(borrowing.BookId);
+            var book = await _bookRepository.GetByIdAsync(borrowing.BookId, cancellationToken);
 
             if (book is null)
                 return Result.Failure(DomainErrors.Book.NotFound(borrowing.BookId));
@@ -47,7 +47,7 @@ namespace Library.Application.Borrowings.Commands.ReturnBook
             _borrowingRepository.Update(borrowing);
             _bookRepository.Update(book);
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result.Success();
         }

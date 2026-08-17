@@ -20,7 +20,7 @@ namespace Library.Application.Borrowings.Queries.GetBorrowingById
             GetBorrowingByIdQuery request,
             CancellationToken cancellationToken)
         {
-            var borrowing = await _borrowingRepository.GetByIdAsync(request.Id);
+            var borrowing = await _borrowingRepository.GetByIdAsync(request.Id, cancellationToken);
 
             return borrowing is null
                 ? Result.Failure<BorrowingResponse>(DomainErrors.Borrowing.NotFound(request.Id))

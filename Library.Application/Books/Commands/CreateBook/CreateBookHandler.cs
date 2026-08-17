@@ -25,7 +25,7 @@ namespace Library.Application.Books.Commands.CreateBook
             CreateBookCommand request,
             CancellationToken cancellationToken)
         {
-            var existingBook = await _bookRepository.GetByIsbnAsync(request.Isbn);
+            var existingBook = await _bookRepository.GetByIsbnAsync(request.Isbn, cancellationToken);
 
             if (existingBook is not null)
                 return Result.Failure<BookResponse>(DomainErrors.Book.IsbnAlreadyExists);
@@ -42,8 +42,8 @@ namespace Library.Application.Books.Commands.CreateBook
 
             var book = bookResult.Value;
 
-            await _bookRepository.AddAsync(book);
-            await _unitOfWork.SaveChangesAsync();
+            await _bookRepository.AddAsync(book, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result.Success(book.ToResponse());
         }

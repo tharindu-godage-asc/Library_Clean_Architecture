@@ -19,7 +19,7 @@ namespace Library.Application.Borrowings.Queries.GetAllBorrowings
             GetAllBorrowingsQuery request,
             CancellationToken cancellationToken)
         {
-            var borrowings = await _borrowingRepository.GetAllAsync();
+            var borrowings = await _borrowingRepository.GetAllAsync(cancellationToken);
 
             return borrowings.Select(b => b.ToResponse());
         }

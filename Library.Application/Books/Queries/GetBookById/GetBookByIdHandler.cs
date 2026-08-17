@@ -20,7 +20,7 @@ namespace Library.Application.Books.Queries.GetBookById
             GetBookByIdQuery request,
             CancellationToken cancellationToken)
         {
-            var book = await _bookRepository.GetByIdAsync(request.Id);
+            var book = await _bookRepository.GetByIdAsync(request.Id, cancellationToken);
 
             return book is null
                 ? Result.Failure<BookResponse>(DomainErrors.Book.NotFound(request.Id))

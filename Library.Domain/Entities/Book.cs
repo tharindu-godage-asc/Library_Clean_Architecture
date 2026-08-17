@@ -36,7 +36,7 @@ namespace Library.Domain.Entities
             AvailableCopies = totalCopies;
         }
 
-        public static Result<Book> Create(
+        internal static Result<Book> Create(
             string title,
             string author,
             string isbn,
@@ -61,7 +61,7 @@ namespace Library.Domain.Entities
             return Result.Success(new Book(title, author, isbn, publishedYear, totalCopies));
         }
 
-        public Result BorrowCopy()
+        internal Result BorrowCopy()
         {
             if (AvailableCopies <= 0)
                 return Result.Failure(DomainErrors.Book.NoAvailableCopies);
@@ -70,7 +70,7 @@ namespace Library.Domain.Entities
             return Result.Success();
         }
 
-        public Result ReturnCopy()
+        internal Result ReturnCopy()
         {
             if (AvailableCopies >= TotalCopies)
                 return Result.Failure(DomainErrors.Book.AllCopiesAccountedFor);

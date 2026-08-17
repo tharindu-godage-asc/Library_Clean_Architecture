@@ -25,7 +25,7 @@ namespace Library.Application.Members.Commands.CreateMember
             CreateMemberCommand request,
             CancellationToken cancellationToken)
         {
-            var existingMember = await _memberRepository.GetByEmailAsync(request.Email);
+            var existingMember = await _memberRepository.GetByEmailAsync(request.Email, cancellationToken);
 
             if (existingMember is not null)
                 return Result.Failure<MemberResponse>(DomainErrors.Member.EmailAlreadyExists);
@@ -40,8 +40,8 @@ namespace Library.Application.Members.Commands.CreateMember
 
             var member = memberResult.Value;
 
-            await _memberRepository.AddAsync(member);
-            await _unitOfWork.SaveChangesAsync();
+            await _memberRepository.AddAsync(member, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result.Success(member.ToResponse());
         }
