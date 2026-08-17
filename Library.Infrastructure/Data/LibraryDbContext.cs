@@ -21,9 +21,24 @@ namespace Library.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.HasPostgresExtension("pg_trgm");
+
             modelBuilder.Entity<Book>()
                 .HasIndex(b => b.Isbn)
                 .IsUnique();
+
+            modelBuilder.Entity<Book>()
+                .HasIndex(b => b.Title)
+                .HasMethod("gin")
+                .HasOperators("gin_trgm_ops");
+
+            modelBuilder.Entity<Book>()
+                .HasIndex(b => b.Author)
+                .HasMethod("gin")
+                .HasOperators("gin_trgm_ops");
+
+            modelBuilder.Entity<Book>()
+                .HasIndex(b => b.PublishedYear);
 
             modelBuilder.Entity<Member>().OwnsOne(m => m.Email, email =>
             {

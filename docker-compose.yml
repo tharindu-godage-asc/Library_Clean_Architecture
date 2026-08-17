@@ -6,7 +6,7 @@ services:
     container_name: library-db2
     restart: always
     environment:
-      POSTGRES_DB: librarydb
+      POSTGRES_DB: librarydb2
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:

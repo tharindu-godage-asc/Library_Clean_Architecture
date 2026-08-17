@@ -31,6 +31,26 @@ namespace Library.Infrastructure.Repositories
             return await _context.Books.ToListAsync(cancellationToken);
         }
 
+        public async Task<IEnumerable<Book>> SearchAsync(
+            string? title,
+            string? author,
+            int? publishedYear,
+            CancellationToken cancellationToken = default)
+        {
+            IQueryable<Book> query = _context.Books.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(title))
+                query = query.Where(b => EF.Functions.ILike(b.Title, $"%{title}%"));
+
+            if (!string.IsNullOrWhiteSpace(author))
+                query = query.Where(b => EF.Functions.ILike(b.Author, $"%{author}%"));
+
+            if (publishedYear.HasValue)
+                query = query.Where(b => b.PublishedYear == publishedYear.Value);
+
+            return await query.ToListAsync(cancellationToken);
+        }
+
         public async Task AddAsync(Book book, CancellationToken cancellationToken = default)
         {
             await _context.Books.AddAsync(book, cancellationToken);
