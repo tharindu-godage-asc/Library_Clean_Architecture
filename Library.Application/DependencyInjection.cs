@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Library.Application.Services;
 using Library.Application.Validators;
 using Microsoft.Extensions.DependencyInjection;
