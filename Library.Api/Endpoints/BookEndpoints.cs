@@ -22,14 +22,25 @@ namespace Library.Api.Endpoints
                 string? title,
                 string? author,
                 int? publishedYear,
+                string? sortBy,
+                bool? sortDescending,
+                int? pageNumber,
+                int? pageSize,
                 ISender sender,
                 CancellationToken cancellationToken) =>
             {
-                var books = await sender.Send(
-                    new GetAllBooksQuery(title, author, publishedYear),
-                    cancellationToken);
+                var query = new GetAllBooksQuery(
+                    title,
+                    author,
+                    publishedYear,
+                    sortBy,
+                    sortDescending ?? false,
+                    pageNumber ?? 1,
+                    pageSize ?? 20);
 
-                return Results.Ok(books);
+                var result = await sender.Send(query, cancellationToken);
+
+                return Results.Ok(result);
             });
 
             group.MapGet("/{id:guid}", async (
