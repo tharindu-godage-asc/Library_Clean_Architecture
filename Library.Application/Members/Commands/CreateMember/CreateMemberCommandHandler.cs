@@ -7,13 +7,13 @@ using MediatR;
 
 namespace Library.Application.Members.Commands.CreateMember
 {
-    public sealed class CreateMemberHandler
+    public sealed class CreateMemberCommandHandler
         : IRequestHandler<CreateMemberCommand, Result<MemberResponse>>
     {
         private readonly IMemberRepository _memberRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public CreateMemberHandler(
+        public CreateMemberCommandHandler(
             IMemberRepository memberRepository,
             IUnitOfWork unitOfWork)
         {

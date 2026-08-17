@@ -6,14 +6,14 @@ using MediatR;
 
 namespace Library.Application.Books.Queries.GetAllBooks
 {
-    public sealed class GetAllBooksHandler
+    public sealed class GetAllBooksQueryHandler
         : IRequestHandler<GetAllBooksQuery, PagedResponse<BookResponse>>
     {
         private const int MaxPageSize = 100;
 
         private readonly IBookRepository _bookRepository;
 
-        public GetAllBooksHandler(IBookRepository bookRepository)
+        public GetAllBooksQueryHandler(IBookRepository bookRepository)
         {
             _bookRepository = bookRepository;
         }

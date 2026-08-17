@@ -6,12 +6,12 @@ using MediatR;
 
 namespace Library.Application.Borrowings.Queries.GetBorrowingById
 {
-    public sealed class GetBorrowingByIdHandler
+    public sealed class GetBorrowingByIdQueryHandler
         : IRequestHandler<GetBorrowingByIdQuery, Result<BorrowingResponse>>
     {
         private readonly IBorrowingRepository _borrowingRepository;
 
-        public GetBorrowingByIdHandler(IBorrowingRepository borrowingRepository)
+        public GetBorrowingByIdQueryHandler(IBorrowingRepository borrowingRepository)
         {
             _borrowingRepository = borrowingRepository;
         }

@@ -5,12 +5,12 @@ using MediatR;
 
 namespace Library.Application.Members.Queries.GetAllMembers
 {
-    public sealed class GetAllMembersHandler
+    public sealed class GetAllMembersQueryHandler
         : IRequestHandler<GetAllMembersQuery, IEnumerable<MemberResponse>>
     {
         private readonly IMemberRepository _memberRepository;
 
-        public GetAllMembersHandler(IMemberRepository memberRepository)
+        public GetAllMembersQueryHandler(IMemberRepository memberRepository)
         {
             _memberRepository = memberRepository;
         }

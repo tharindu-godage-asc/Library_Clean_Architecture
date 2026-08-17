@@ -7,7 +7,7 @@ using MediatR;
 
 namespace Library.Application.Borrowings.Commands.BorrowBook
 {
-    public sealed class BorrowBookHandler
+    public sealed class BorrowBookCommandHandler
         : IRequestHandler<BorrowBookCommand, Result<BorrowingResponse>>
     {
         private readonly IBookRepository _bookRepository;
@@ -15,7 +15,7 @@ namespace Library.Application.Borrowings.Commands.BorrowBook
         private readonly IBorrowingRepository _borrowingRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public BorrowBookHandler(
+        public BorrowBookCommandHandler(
             IBookRepository bookRepository,
             IMemberRepository memberRepository,
             IBorrowingRepository borrowingRepository,

@@ -4,12 +4,12 @@ using MediatR;
 
 namespace Library.Application.Books.Commands.DeleteBook
 {
-    public sealed class DeleteBookHandler : IRequestHandler<DeleteBookCommand, Result>
+    public sealed class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand, Result>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public DeleteBookHandler(
+        public DeleteBookCommandHandler(
             IBookRepository bookRepository,
             IUnitOfWork unitOfWork)
         {

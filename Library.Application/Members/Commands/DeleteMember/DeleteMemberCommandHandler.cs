@@ -4,12 +4,12 @@ using MediatR;
 
 namespace Library.Application.Members.Commands.DeleteMember
 {
-    public sealed class DeleteMemberHandler : IRequestHandler<DeleteMemberCommand, Result>
+    public sealed class DeleteMemberCommandHandler : IRequestHandler<DeleteMemberCommand, Result>
     {
         private readonly IMemberRepository _memberRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public DeleteMemberHandler(
+        public DeleteMemberCommandHandler(
             IMemberRepository memberRepository,
             IUnitOfWork unitOfWork)
         {

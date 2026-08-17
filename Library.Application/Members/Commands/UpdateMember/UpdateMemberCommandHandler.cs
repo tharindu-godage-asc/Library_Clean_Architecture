@@ -6,13 +6,13 @@ using MediatR;
 
 namespace Library.Application.Members.Commands.UpdateMember
 {
-    public sealed class UpdateMemberHandler
+    public sealed class UpdateMemberCommandHandler
         : IRequestHandler<UpdateMemberCommand, Result<MemberResponse>>
     {
         private readonly IMemberRepository _memberRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public UpdateMemberHandler(
+        public UpdateMemberCommandHandler(
             IMemberRepository memberRepository,
             IUnitOfWork unitOfWork)
         {

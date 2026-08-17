@@ -5,12 +5,12 @@ using MediatR;
 
 namespace Library.Application.Borrowings.Queries.GetAllBorrowings
 {
-    public sealed class GetAllBorrowingsHandler
+    public sealed class GetAllBorrowingsQueryHandler
         : IRequestHandler<GetAllBorrowingsQuery, IEnumerable<BorrowingResponse>>
     {
         private readonly IBorrowingRepository _borrowingRepository;
 
-        public GetAllBorrowingsHandler(IBorrowingRepository borrowingRepository)
+        public GetAllBorrowingsQueryHandler(IBorrowingRepository borrowingRepository)
         {
             _borrowingRepository = borrowingRepository;
         }

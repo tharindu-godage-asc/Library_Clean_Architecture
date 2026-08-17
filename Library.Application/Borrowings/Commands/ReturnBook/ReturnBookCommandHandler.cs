@@ -4,13 +4,13 @@ using MediatR;
 
 namespace Library.Application.Borrowings.Commands.ReturnBook
 {
-    public sealed class ReturnBookHandler : IRequestHandler<ReturnBookCommand, Result>
+    public sealed class ReturnBookCommandHandler : IRequestHandler<ReturnBookCommand, Result>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IBorrowingRepository _borrowingRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public ReturnBookHandler(
+        public ReturnBookCommandHandler(
             IBookRepository bookRepository,
             IBorrowingRepository borrowingRepository,
             IUnitOfWork unitOfWork)

@@ -6,13 +6,13 @@ using MediatR;
 
 namespace Library.Application.Borrowings.Queries.GetBorrowingsByMember
 {
-    public sealed class GetBorrowingsByMemberHandler
+    public sealed class GetBorrowingsByMemberQueryHandler
         : IRequestHandler<GetBorrowingsByMemberQuery, Result<IEnumerable<BorrowingResponse>>>
     {
         private readonly IMemberRepository _memberRepository;
         private readonly IBorrowingRepository _borrowingRepository;
 
-        public GetBorrowingsByMemberHandler(
+        public GetBorrowingsByMemberQueryHandler(
             IMemberRepository memberRepository,
             IBorrowingRepository borrowingRepository)
         {

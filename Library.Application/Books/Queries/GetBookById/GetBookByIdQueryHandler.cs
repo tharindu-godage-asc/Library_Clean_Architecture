@@ -6,12 +6,12 @@ using MediatR;
 
 namespace Library.Application.Books.Queries.GetBookById
 {
-    public sealed class GetBookByIdHandler
+    public sealed class GetBookByIdQueryHandler
         : IRequestHandler<GetBookByIdQuery, Result<BookResponse>>
     {
         private readonly IBookRepository _bookRepository;
 
-        public GetBookByIdHandler(IBookRepository bookRepository)
+        public GetBookByIdQueryHandler(IBookRepository bookRepository)
         {
             _bookRepository = bookRepository;
         }

@@ -1,18 +1,19 @@
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
+using Library.Domain.Entities;
 using Library.Domain.Shared;
 using MediatR;
 
-namespace Library.Application.Books.Commands.UpdateBook
+namespace Library.Application.Books.Commands.CreateBook
 {
-    public sealed class UpdateBookHandler
-        : IRequestHandler<UpdateBookCommand, Result<BookResponse>>
+    public sealed class CreateBookCommandHandler
+        : IRequestHandler<CreateBookCommand, Result<BookResponse>>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public UpdateBookHandler(
+        public CreateBookCommandHandler(
             IBookRepository bookRepository,
             IUnitOfWork unitOfWork)
         {
@@ -21,30 +22,27 @@ namespace Library.Application.Books.Commands.UpdateBook
         }
 
         public async Task<Result<BookResponse>> Handle(
-            UpdateBookCommand request,
+            CreateBookCommand request,
             CancellationToken cancellationToken)
         {
-            var book = await _bookRepository.GetByIdAsync(request.Id, cancellationToken);
+            var existingBook = await _bookRepository.GetByIsbnAsync(request.Isbn, cancellationToken);
 
-            if (book is null)
-                return Result.Failure<BookResponse>(DomainErrors.Book.NotFound(request.Id));
-
-            var existingBookWithIsbn = await _bookRepository.GetByIsbnAsync(request.Isbn, cancellationToken);
-
-            if (existingBookWithIsbn is not null && existingBookWithIsbn.Id != request.Id)
+            if (existingBook is not null)
                 return Result.Failure<BookResponse>(DomainErrors.Book.IsbnAlreadyExists);
 
-            var updateResult = book.UpdateDetails(
+            var bookResult = Book.Create(
                 request.Title,
                 request.Author,
                 request.Isbn,
                 request.PublishedYear,
                 request.TotalCopies);
 
-            if (updateResult.IsFailure)
-                return Result.Failure<BookResponse>(updateResult.Error);
+            if (bookResult.IsFailure)
+                return Result.Failure<BookResponse>(bookResult.Error);
 
-            _bookRepository.Update(book);
+            var book = bookResult.Value;
+
+            await _bookRepository.AddAsync(book, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result.Success(book.ToResponse());

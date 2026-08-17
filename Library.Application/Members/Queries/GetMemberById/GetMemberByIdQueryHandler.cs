@@ -6,12 +6,12 @@ using MediatR;
 
 namespace Library.Application.Members.Queries.GetMemberById
 {
-    public sealed class GetMemberByIdHandler
+    public sealed class GetMemberByIdQueryHandler
         : IRequestHandler<GetMemberByIdQuery, Result<MemberResponse>>
     {
         private readonly IMemberRepository _memberRepository;
 
-        public GetMemberByIdHandler(IMemberRepository memberRepository)
+        public GetMemberByIdQueryHandler(IMemberRepository memberRepository)
         {
             _memberRepository = memberRepository;
         }
