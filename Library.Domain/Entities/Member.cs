@@ -50,6 +50,29 @@ namespace Library.Domain.Entities
             return Result.Success(new Member(name, emailResult.Value, phoneNumber));
         }
 
+        internal Result UpdateDetails(
+            string name,
+            string email,
+            string phoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return Result.Failure(DomainErrors.Member.NameRequired);
+
+            if (string.IsNullOrWhiteSpace(phoneNumber))
+                return Result.Failure(DomainErrors.Member.PhoneNumberRequired);
+
+            var emailResult = Library.Domain.ValueObjects.Email.Create(email);
+
+            if (emailResult.IsFailure)
+                return Result.Failure(emailResult.Error);
+
+            Name = name;
+            Email = emailResult.Value;
+            PhoneNumber = phoneNumber;
+
+            return Result.Success();
+        }
+
         internal void Activate()
         {
             IsActive = true;

@@ -1,6 +1,8 @@
 ﻿using Library.Api.Common.Filters;
 using Library.Api.Common.Http;
 using Library.Application.Books.Commands.CreateBook;
+using Library.Application.Books.Commands.DeleteBook;
+using Library.Application.Books.Commands.UpdateBook;
 using Library.Application.Books.Queries.GetBookById;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
@@ -58,6 +60,40 @@ namespace Library.Api.Endpoints
                     : result.ToProblemDetails();
             })
             .AddEndpointFilter<ValidationFilter<CreateBookRequest>>();
+
+            group.MapPut("/{id:guid}", async (
+                Guid id,
+                UpdateBookRequest request,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new UpdateBookCommand(
+                    id,
+                    request.Title,
+                    request.Author,
+                    request.Isbn,
+                    request.PublishedYear,
+                    request.TotalCopies);
+
+                var result = await sender.Send(command, cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
+            })
+            .AddEndpointFilter<ValidationFilter<UpdateBookRequest>>();
+
+            group.MapDelete("/{id:guid}", async (
+                Guid id,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await sender.Send(new DeleteBookCommand(id), cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.NoContent()
+                    : result.ToProblemDetails();
+            });
 
             return app;
         }

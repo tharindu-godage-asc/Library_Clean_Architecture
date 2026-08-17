@@ -33,6 +33,13 @@ namespace Library.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<IEnumerable<Borrowing>> GetByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Borrowings
+                .Where(b => b.MemberId == memberId)
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task<int> CountActiveForMemberAsync(Guid memberId, CancellationToken cancellationToken = default)
         {
             return await _context.Borrowings.CountAsync(

@@ -2,8 +2,11 @@
 using Library.Api.Common.Http;
 using Library.Application.Contracts.Members;
 using Library.Application.Members.Commands.CreateMember;
+using Library.Application.Members.Commands.DeleteMember;
+using Library.Application.Members.Commands.UpdateMember;
 using Library.Application.Members.Queries.GetAllMembers;
 using Library.Application.Members.Queries.GetMemberById;
+using Library.Application.Borrowings.Queries.GetBorrowingsByMember;
 using MediatR;
 
 namespace Library.Api.Endpoints
@@ -54,6 +57,50 @@ namespace Library.Api.Endpoints
                     : result.ToProblemDetails();
             })
             .AddEndpointFilter<ValidationFilter<CreateMemberRequest>>();
+
+            group.MapPut("/{id:guid}", async (
+                Guid id,
+                UpdateMemberRequest request,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var command = new UpdateMemberCommand(
+                    id,
+                    request.Name,
+                    request.Email,
+                    request.PhoneNumber);
+
+                var result = await sender.Send(command, cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
+            })
+            .AddEndpointFilter<ValidationFilter<UpdateMemberRequest>>();
+
+            group.MapDelete("/{id:guid}", async (
+                Guid id,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await sender.Send(new DeleteMemberCommand(id), cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.NoContent()
+                    : result.ToProblemDetails();
+            });
+
+            group.MapGet("/{memberId:guid}/borrowings", async (
+                Guid memberId,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                var result = await sender.Send(new GetBorrowingsByMemberQuery(memberId), cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
+            });
 
             return app;
         }

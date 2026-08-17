@@ -10,6 +10,8 @@ namespace Library.Application.Interfaces
 
         Task<IEnumerable<Borrowing>> GetActiveBorrowingsAsync(CancellationToken cancellationToken = default);
 
+        Task<IEnumerable<Borrowing>> GetByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default);
+
         Task<int> CountActiveForMemberAsync(Guid memberId, CancellationToken cancellationToken = default);
 
         Task AddAsync(Borrowing borrowing, CancellationToken cancellationToken = default);

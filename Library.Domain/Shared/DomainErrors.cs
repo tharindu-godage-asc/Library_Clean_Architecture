@@ -47,6 +47,10 @@ namespace Library.Domain.Shared
                 "Book.IsbnAlreadyExists",
                 "A book with this ISBN already exists.");
 
+            public static readonly Error TotalCopiesLessThanBorrowed = Error.Failure(
+                "Book.TotalCopiesLessThanBorrowed",
+                "Total copies cannot be less than the number of copies currently borrowed.");
+
             public static Error NotFound(Guid id) => Error.NotFound(
                 "Book.NotFound",
                 $"The book with Id = '{id}' was not found.");
