@@ -1,10 +1,10 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Interfaces;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Books.Commands.DeleteBook
 {
-    public sealed class DeleteBookCommandHandler : IRequestHandler<DeleteBookCommand, Result>
+    public sealed class DeleteBookCommandHandler : ICommandHandler<DeleteBookCommand>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IUnitOfWork _unitOfWork;

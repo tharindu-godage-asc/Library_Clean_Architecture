@@ -1,10 +1,10 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Interfaces;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Members.Commands.DeleteMember
 {
-    public sealed class DeleteMemberCommandHandler : IRequestHandler<DeleteMemberCommand, Result>
+    public sealed class DeleteMemberCommandHandler : ICommandHandler<DeleteMemberCommand>
     {
         private readonly IMemberRepository _memberRepository;
         private readonly IUnitOfWork _unitOfWork;

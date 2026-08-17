@@ -1,8 +1,8 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Books;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Books.Queries.GetBookById
 {
-    public sealed record GetBookByIdQuery(Guid Id) : IRequest<Result<BookResponse>>;
+    public sealed record GetBookByIdQuery(Guid Id) : IQuery<Result<BookResponse>>;
 }

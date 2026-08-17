@@ -1,13 +1,13 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Common;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
-using MediatR;
 
 namespace Library.Application.Books.Queries.GetAllBooks
 {
     public sealed class GetAllBooksQueryHandler
-        : IRequestHandler<GetAllBooksQuery, PagedResponse<BookResponse>>
+        : IQueryHandler<GetAllBooksQuery, PagedResponse<BookResponse>>
     {
         private const int MaxPageSize = 100;
 

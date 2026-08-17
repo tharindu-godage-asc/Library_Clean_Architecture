@@ -1,7 +1,6 @@
-using Library.Domain.Shared;
-using MediatR;
+using Library.Application.Abstractions.Messaging;
 
 namespace Library.Application.Books.Commands.DeleteBook
 {
-    public sealed record DeleteBookCommand(Guid Id) : IRequest<Result>;
+    public sealed record DeleteBookCommand(Guid Id) : ICommand;
 }

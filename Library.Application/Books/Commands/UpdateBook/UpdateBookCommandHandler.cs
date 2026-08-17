@@ -1,13 +1,13 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Books.Commands.UpdateBook
 {
     public sealed class UpdateBookCommandHandler
-        : IRequestHandler<UpdateBookCommand, Result<BookResponse>>
+        : ICommandHandler<UpdateBookCommand, BookResponse>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IUnitOfWork _unitOfWork;

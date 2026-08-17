@@ -1,6 +1,6 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Common;
-using MediatR;
 
 namespace Library.Application.Books.Queries.GetAllBooks
 {
@@ -11,5 +11,5 @@ namespace Library.Application.Books.Queries.GetAllBooks
         string? SortBy,
         bool SortDescending,
         int PageNumber,
-        int PageSize) : IRequest<PagedResponse<BookResponse>>;
+        int PageSize) : IQuery<PagedResponse<BookResponse>>;
 }

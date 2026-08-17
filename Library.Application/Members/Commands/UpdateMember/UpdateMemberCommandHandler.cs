@@ -1,13 +1,13 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Members;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Members.Commands.UpdateMember
 {
     public sealed class UpdateMemberCommandHandler
-        : IRequestHandler<UpdateMemberCommand, Result<MemberResponse>>
+        : ICommandHandler<UpdateMemberCommand, MemberResponse>
     {
         private readonly IMemberRepository _memberRepository;
         private readonly IUnitOfWork _unitOfWork;

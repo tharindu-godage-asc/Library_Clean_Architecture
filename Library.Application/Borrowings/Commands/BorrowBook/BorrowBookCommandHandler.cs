@@ -1,14 +1,14 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Borrowings;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
 using Library.Domain.Entities;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Borrowings.Commands.BorrowBook
 {
     public sealed class BorrowBookCommandHandler
-        : IRequestHandler<BorrowBookCommand, Result<BorrowingResponse>>
+        : ICommandHandler<BorrowBookCommand, BorrowingResponse>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IMemberRepository _memberRepository;

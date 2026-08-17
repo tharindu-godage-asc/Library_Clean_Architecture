@@ -1,12 +1,12 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Members;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
-using MediatR;
 
 namespace Library.Application.Members.Queries.GetAllMembers
 {
     public sealed class GetAllMembersQueryHandler
-        : IRequestHandler<GetAllMembersQuery, IEnumerable<MemberResponse>>
+        : IQueryHandler<GetAllMembersQuery, IEnumerable<MemberResponse>>
     {
         private readonly IMemberRepository _memberRepository;
 

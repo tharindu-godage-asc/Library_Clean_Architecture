@@ -1,14 +1,14 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
 using Library.Domain.Entities;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Books.Commands.CreateBook
 {
     public sealed class CreateBookCommandHandler
-        : IRequestHandler<CreateBookCommand, Result<BookResponse>>
+        : ICommandHandler<CreateBookCommand, BookResponse>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IUnitOfWork _unitOfWork;

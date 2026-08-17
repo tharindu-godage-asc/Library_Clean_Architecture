@@ -1,10 +1,10 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Interfaces;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Borrowings.Commands.ReturnBook
 {
-    public sealed class ReturnBookCommandHandler : IRequestHandler<ReturnBookCommand, Result>
+    public sealed class ReturnBookCommandHandler : ICommandHandler<ReturnBookCommand>
     {
         private readonly IBookRepository _bookRepository;
         private readonly IBorrowingRepository _borrowingRepository;
