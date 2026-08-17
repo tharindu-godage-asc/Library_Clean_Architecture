@@ -1,9 +1,10 @@
 ﻿using Library.Api.Common.Filters;
-using Library.Application.Common;
-using Library.Application.Contracts.Mappings;
+using Library.Api.Common.Http;
 using Library.Application.Contracts.Members;
-using Library.Application.Services;
-using Library.Domain.Entities;
+using Library.Application.Members.Commands.CreateMember;
+using Library.Application.Members.Queries.GetAllMembers;
+using Library.Application.Members.Queries.GetMemberById;
+using MediatR;
 
 namespace Library.Api.Endpoints
 {
@@ -15,37 +16,38 @@ namespace Library.Api.Endpoints
             var group = app.MapGroup("/api/members")
                 .WithTags("Members");
 
-            group.MapGet("/", async (MemberService service) =>
+            group.MapGet("/", async (ISender sender) =>
             {
-                var members = await service.GetAllAsync();
+                var members = await sender.Send(new GetAllMembersQuery());
 
-                return Results.Ok(
-                    members.Select(m => m.ToResponse()));
+                return Results.Ok(members);
             });
 
             group.MapGet("/{id:guid}", async (
                 Guid id,
-                MemberService service) =>
+                ISender sender) =>
             {
-                var member = await service.GetByIdAsync(id);
+                var result = await sender.Send(new GetMemberByIdQuery(id));
 
-                return Results.Ok(member.ToResponse());
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
             });
 
             group.MapPost("/", async (
                 CreateMemberRequest request,
-                MemberService service) =>
+                ISender sender) =>
             {
-                var member = Member.Create(
+                var command = new CreateMemberCommand(
                     request.Name,
                     request.Email,
-                    request.PhoneNumber).GetValueOrThrow();
+                    request.PhoneNumber);
 
-                await service.CreateAsync(member);
+                var result = await sender.Send(command);
 
-                return Results.Created(
-                    $"/api/members/{member.Id}",
-                    member.ToResponse());
+                return result.IsSuccess
+                    ? Results.Created($"/api/members/{result.Value.Id}", result.Value)
+                    : result.ToProblemDetails();
             })
             .AddEndpointFilter<ValidationFilter<CreateMemberRequest>>();
 

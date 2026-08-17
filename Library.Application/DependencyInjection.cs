@@ -11,8 +11,6 @@ namespace Library.Application
             this IServiceCollection services)
         {
             services.AddScoped<BookService>();
-            services.AddScoped<MemberService>();
-            services.AddScoped<BorrowingService>();
             services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
             services.AddMediatR(cfg =>
                 cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));

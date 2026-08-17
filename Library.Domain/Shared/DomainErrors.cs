@@ -61,6 +61,18 @@ namespace Library.Domain.Shared
             public static readonly Error PhoneNumberRequired = Error.Validation(
                 "Member.PhoneNumberRequired",
                 "Phone number is required.");
+
+            public static readonly Error EmailAlreadyExists = Error.Conflict(
+                "Member.EmailAlreadyExists",
+                "A member with this email already exists.");
+
+            public static readonly Error Inactive = Error.Failure(
+                "Member.Inactive",
+                "Member is inactive.");
+
+            public static Error NotFound(Guid id) => Error.NotFound(
+                "Member.NotFound",
+                $"The member with Id = '{id}' was not found.");
         }
 
         public static class Borrowing
@@ -72,6 +84,14 @@ namespace Library.Domain.Shared
             public static readonly Error AlreadyReturned = Error.Failure(
                 "Borrowing.AlreadyReturned",
                 "Book has already been returned.");
+
+            public static readonly Error LimitExceeded = Error.Failure(
+                "Borrowing.LimitExceeded",
+                "Member borrowing limit exceeded.");
+
+            public static Error NotFound(Guid id) => Error.NotFound(
+                "Borrowing.NotFound",
+                $"The borrowing record with Id = '{id}' was not found.");
         }
     }
 }

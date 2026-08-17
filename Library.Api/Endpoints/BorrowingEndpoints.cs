@@ -1,7 +1,11 @@
 ﻿using Library.Api.Common.Filters;
+using Library.Api.Common.Http;
+using Library.Application.Borrowings.Commands.BorrowBook;
+using Library.Application.Borrowings.Commands.ReturnBook;
+using Library.Application.Borrowings.Queries.GetAllBorrowings;
+using Library.Application.Borrowings.Queries.GetBorrowingById;
 using Library.Application.Contracts.Borrowings;
-using Library.Application.Contracts.Mappings;
-using Library.Application.Services;
+using MediatR;
 
 namespace Library.Api.Endpoints
 {
@@ -13,45 +17,49 @@ namespace Library.Api.Endpoints
             var group = app.MapGroup("/api/borrowings")
                 .WithTags("Borrowings");
 
-            group.MapGet("/", async (BorrowingService service) =>
+            group.MapGet("/", async (ISender sender) =>
             {
-                var borrowings = await service.GetAllAsync();
+                var borrowings = await sender.Send(new GetAllBorrowingsQuery());
 
-                return Results.Ok(
-                    borrowings.Select(b => b.ToResponse()));
+                return Results.Ok(borrowings);
             });
 
             group.MapGet("/{id:guid}", async (
                 Guid id,
-                BorrowingService service) =>
+                ISender sender) =>
             {
-                var borrowing = await service.GetByIdAsync(id);
+                var result = await sender.Send(new GetBorrowingByIdQuery(id));
 
-                return Results.Ok(borrowing.ToResponse());
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
             });
 
             group.MapPost("/", async (
                 CreateBorrowingRequest request,
-                BorrowingService service) =>
+                ISender sender) =>
             {
-                var borrowing =
-                    await service.BorrowBookAsync(
-                        request.MemberId,
-                        request.BookId);
+                var command = new BorrowBookCommand(
+                    request.MemberId,
+                    request.BookId);
 
-                return Results.Created(
-                    $"/api/borrowings/{borrowing.Id}",
-                    borrowing.ToResponse());
+                var result = await sender.Send(command);
+
+                return result.IsSuccess
+                    ? Results.Created($"/api/borrowings/{result.Value.Id}", result.Value)
+                    : result.ToProblemDetails();
             })
             .AddEndpointFilter<ValidationFilter<CreateBorrowingRequest>>();
 
             group.MapPost("/{id:guid}/return", async (
                 Guid id,
-                BorrowingService service) =>
+                ISender sender) =>
             {
-                await service.ReturnBookAsync(id);
+                var result = await sender.Send(new ReturnBookCommand(id));
 
-                return Results.NoContent();
+                return result.IsSuccess
+                    ? Results.NoContent()
+                    : result.ToProblemDetails();
             });
 
             return app;

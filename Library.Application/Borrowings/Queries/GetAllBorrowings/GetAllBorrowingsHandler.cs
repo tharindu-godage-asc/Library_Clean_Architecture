@@ -1,0 +1,27 @@
+using Library.Application.Contracts.Borrowings;
+using Library.Application.Contracts.Mappings;
+using Library.Application.Interfaces;
+using MediatR;
+
+namespace Library.Application.Borrowings.Queries.GetAllBorrowings
+{
+    public sealed class GetAllBorrowingsHandler
+        : IRequestHandler<GetAllBorrowingsQuery, IEnumerable<BorrowingResponse>>
+    {
+        private readonly IBorrowingRepository _borrowingRepository;
+
+        public GetAllBorrowingsHandler(IBorrowingRepository borrowingRepository)
+        {
+            _borrowingRepository = borrowingRepository;
+        }
+
+        public async Task<IEnumerable<BorrowingResponse>> Handle(
+            GetAllBorrowingsQuery request,
+            CancellationToken cancellationToken)
+        {
+            var borrowings = await _borrowingRepository.GetAllAsync();
+
+            return borrowings.Select(b => b.ToResponse());
+        }
+    }
+}
