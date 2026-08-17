@@ -1,14 +1,14 @@
-﻿using Library.Domain.Enums;
+using Library.Domain.Enums;
+using Library.Domain.Primitives;
+using Library.Domain.Shared;
 
 namespace Library.Domain.Entities;
 
-public class Borrowing
+public class Borrowing : Entity
 {
-    public int Id { get; private set; }
+    public Guid BookId { get; private set; }
 
-    public int BookId { get; private set; }
-
-    public int MemberId { get; private set; }
+    public Guid MemberId { get; private set; }
 
     public DateTime BorrowedAt { get; private set; }
 
@@ -18,19 +18,17 @@ public class Borrowing
 
     public BorrowingStatus Status { get; private set; }
 
-    private Borrowing()
+    private Borrowing() : base(Guid.Empty)
     {
     }
 
-    public Borrowing(
-        int bookId,
-        int memberId,
+    private Borrowing(
+        Guid bookId,
+        Guid memberId,
         DateTime borrowedAt,
         DateTime dueDate)
+        : base(Guid.NewGuid())
     {
-        if (dueDate <= borrowedAt)
-            throw new ArgumentException("Due date must be after borrow date.");
-
         BookId = bookId;
         MemberId = memberId;
         BorrowedAt = borrowedAt;
@@ -38,12 +36,33 @@ public class Borrowing
         Status = BorrowingStatus.Active;
     }
 
-    public void ReturnBook()
+    public const int LoanPeriodDays = 14;
+
+    internal static Result<Borrowing> Create(
+        Guid bookId,
+        Guid memberId,
+        DateTime borrowedAt,
+        DateTime dueDate)
+    {
+        if (dueDate <= borrowedAt)
+            return Result.Failure<Borrowing>(DomainErrors.Borrowing.InvalidDueDate);
+
+        return Result.Success(new Borrowing(bookId, memberId, borrowedAt, dueDate));
+    }
+
+    internal static Result<Borrowing> CreateForLoan(
+        Guid bookId,
+        Guid memberId,
+        DateTime borrowedAt)
+        => Create(bookId, memberId, borrowedAt, borrowedAt.AddDays(LoanPeriodDays));
+
+    internal Result ReturnBook()
     {
         if (Status == BorrowingStatus.Returned)
-            throw new InvalidOperationException("Book has already been returned.");
+            return Result.Failure(DomainErrors.Borrowing.AlreadyReturned);
 
         ReturnedAt = DateTime.UtcNow;
         Status = BorrowingStatus.Returned;
+        return Result.Success();
     }
 }

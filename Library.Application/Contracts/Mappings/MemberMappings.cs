@@ -11,7 +11,7 @@ namespace Library.Application.Contracts.Mappings
             {
                 Id = member.Id,
                 Name = member.Name,
-                Email = member.Email,
+                Email = member.Email.Value,
                 PhoneNumber = member.PhoneNumber,
                 IsActive = member.IsActive
             };

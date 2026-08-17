@@ -1,11 +1,11 @@
-﻿using System;
+using System;
+using Library.Domain.Primitives;
+using Library.Domain.Shared;
 
 namespace Library.Domain.Entities
 {
-    public class Book
+    public class Book : Entity
     {
-        public int Id { get; private set; }
-
         public string Title { get; private set; } = default!;
 
         public string Author { get; private set; } = default!;
@@ -18,9 +18,25 @@ namespace Library.Domain.Entities
 
         public int AvailableCopies { get; private set; }
 
-        private Book() { } // Required by EF Core
+        private Book() : base(Guid.Empty) { } // Required by EF Core
 
-        public Book(
+        private Book(
+            string title,
+            string author,
+            string isbn,
+            int publishedYear,
+            int totalCopies)
+            : base(Guid.NewGuid())
+        {
+            Title = title;
+            Author = author;
+            Isbn = isbn;
+            PublishedYear = publishedYear;
+            TotalCopies = totalCopies;
+            AvailableCopies = totalCopies;
+        }
+
+        internal static Result<Book> Create(
             string title,
             string author,
             string isbn,
@@ -28,42 +44,76 @@ namespace Library.Domain.Entities
             int totalCopies)
         {
             if (string.IsNullOrWhiteSpace(title))
-                throw new ArgumentException("Title is required.");
+                return Result.Failure<Book>(DomainErrors.Book.TitleRequired);
 
             if (string.IsNullOrWhiteSpace(author))
-                throw new ArgumentException("Author is required.");
+                return Result.Failure<Book>(DomainErrors.Book.AuthorRequired);
 
             if (string.IsNullOrWhiteSpace(isbn))
-                throw new ArgumentException("Isbn is required.");
+                return Result.Failure<Book>(DomainErrors.Book.IsbnRequired);
 
             if (publishedYear > DateTime.UtcNow.Year)
-                throw new ArgumentException("Published year cannot be in the future.");
+                return Result.Failure<Book>(DomainErrors.Book.PublishedYearInFuture);
 
             if (totalCopies <= 0)
-                throw new ArgumentException("Total copies must be greater than zero.");
+                return Result.Failure<Book>(DomainErrors.Book.TotalCopiesInvalid);
+
+            return Result.Success(new Book(title, author, isbn, publishedYear, totalCopies));
+        }
+
+        internal Result UpdateDetails(
+            string title,
+            string author,
+            string isbn,
+            int publishedYear,
+            int totalCopies)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return Result.Failure(DomainErrors.Book.TitleRequired);
+
+            if (string.IsNullOrWhiteSpace(author))
+                return Result.Failure(DomainErrors.Book.AuthorRequired);
+
+            if (string.IsNullOrWhiteSpace(isbn))
+                return Result.Failure(DomainErrors.Book.IsbnRequired);
+
+            if (publishedYear > DateTime.UtcNow.Year)
+                return Result.Failure(DomainErrors.Book.PublishedYearInFuture);
+
+            if (totalCopies <= 0)
+                return Result.Failure(DomainErrors.Book.TotalCopiesInvalid);
+
+            var borrowedCopies = TotalCopies - AvailableCopies;
+
+            if (totalCopies < borrowedCopies)
+                return Result.Failure(DomainErrors.Book.TotalCopiesLessThanBorrowed);
 
             Title = title;
             Author = author;
             Isbn = isbn;
             PublishedYear = publishedYear;
-            TotalCopies = totalCopies; // Fixed: assigned TotalCopies
-            AvailableCopies = totalCopies;
+            TotalCopies = totalCopies;
+            AvailableCopies = totalCopies - borrowedCopies;
+
+            return Result.Success();
         }
 
-        public void BorrowCopy()
+        internal Result BorrowCopy()
         {
             if (AvailableCopies <= 0)
-                throw new InvalidOperationException("No available copies.");
+                return Result.Failure(DomainErrors.Book.NoAvailableCopies);
 
             AvailableCopies--;
+            return Result.Success();
         }
 
-        public void ReturnCopy()
+        internal Result ReturnCopy()
         {
             if (AvailableCopies >= TotalCopies)
-                throw new InvalidOperationException("All copies already accounted for.");
+                return Result.Failure(DomainErrors.Book.AllCopiesAccountedFor);
 
             AvailableCopies++;
+            return Result.Success();
         }
     }
 }

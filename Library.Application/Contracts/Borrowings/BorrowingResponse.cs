@@ -8,11 +8,11 @@ namespace Library.Application.Contracts.Borrowings
 {
     public class BorrowingResponse
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
-        public int BookId { get; set; }
+        public Guid BookId { get; set; }
 
-        public int MemberId { get; set; }
+        public Guid MemberId { get; set; }
 
         public DateTime BorrowedAt { get; set; }
 

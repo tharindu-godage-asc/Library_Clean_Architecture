@@ -25,9 +25,15 @@ namespace Library.Infrastructure.Data
                 .HasIndex(b => b.Isbn)
                 .IsUnique();
 
-            modelBuilder.Entity<Member>()
-                .HasIndex(m => m.Email)
-                .IsUnique();
+            modelBuilder.Entity<Member>().OwnsOne(m => m.Email, email =>
+            {
+                email.Property(e => e.Value)
+                    .HasColumnName("Email")
+                    .IsRequired();
+
+                email.HasIndex(e => e.Value)
+                    .IsUnique();
+            });
         }
     }
 }

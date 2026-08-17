@@ -1,16 +1,16 @@
-﻿using Library.Domain.Entities;
+using Library.Domain.Entities;
 
 namespace Library.Application.Interfaces
 {
     public interface IBookRepository
     {
-        Task<Book?> GetByIdAsync(int id);
+        Task<Book?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-        Task<Book?> GetByIsbnAsync(string isbn);
+        Task<Book?> GetByIsbnAsync(string isbn, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<Book>> GetAllAsync();
+        Task<IEnumerable<Book>> GetAllAsync(CancellationToken cancellationToken = default);
 
-        Task AddAsync(Book book);
+        Task AddAsync(Book book, CancellationToken cancellationToken = default);
 
         void Update(Book book);
 

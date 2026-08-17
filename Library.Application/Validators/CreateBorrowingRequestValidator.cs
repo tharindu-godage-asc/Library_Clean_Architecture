@@ -9,10 +9,10 @@ namespace Library.Application.Validators
         public CreateBorrowingRequestValidator()
         {
             RuleFor(x => x.BookId)
-                .GreaterThan(0);
+                .NotEmpty();
 
             RuleFor(x => x.MemberId)
-                .GreaterThan(0);
+                .NotEmpty();
         }
     }
 }
