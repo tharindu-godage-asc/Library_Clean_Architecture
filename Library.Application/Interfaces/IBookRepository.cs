@@ -8,14 +8,6 @@ namespace Library.Application.Interfaces
 
         Task<Book?> GetByIsbnAsync(string isbn, CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<Book>> GetAllAsync(CancellationToken cancellationToken = default);
-
-        Task<IEnumerable<Book>> SearchAsync(
-            string? title,
-            string? author,
-            int? publishedYear,
-            CancellationToken cancellationToken = default);
-
         Task<IEnumerable<Book>> SearchAsync(
             string? title,
             string? author,
