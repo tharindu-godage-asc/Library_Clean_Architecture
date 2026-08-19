@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path="docker-compose.yml" />
+    <File Path=".env.example" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="Library.Api/Library.Api.csproj" Id="e3d15ffb-66f2-41b6-be0b-10e9f6c68dc4" />
@@ -9,7 +10,7 @@
     <Project Path="Library.Infrastructure/Library.Infrastructure.csproj" Id="0f41c71f-21a3-4e25-bcc6-26d341336f65" />
   </Folder>
   <Folder Name="/aspire/">
-    <Project Path="Library.AppHost/Library.AppHost.csproj" />
+    <Project Path="Aspire App Host/Aspire App Host.csproj" Id="21431ef6-aa23-49fd-a2f4-198ca9ed1104" />
     <Project Path="Library.ServiceDefaults/Library.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
