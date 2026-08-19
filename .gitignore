@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Working notes / session docs (not part of the shipped project)
 docs/
+
+# Local secrets (real values) — see .env.example for the template
+.env

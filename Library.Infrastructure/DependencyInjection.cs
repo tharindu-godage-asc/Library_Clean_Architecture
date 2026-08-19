@@ -13,9 +13,16 @@ namespace Library.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            var connectionString = configuration.GetConnectionString("LibraryDb");
+
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException(
+                    "Connection string 'LibraryDb' is not configured. Set it via the " +
+                    "ConnectionStrings__LibraryDb environment variable, .NET user-secrets, " +
+                    "or ConnectionStrings:LibraryDb in appsettings.");
+
             services.AddDbContext<LibraryDbContext>(options =>
-                options.UseNpgsql(
-                    configuration.GetConnectionString("LibraryDb")));
+                options.UseNpgsql(connectionString));
 
             services.AddScoped<IBookRepository, BookRepository>();
             services.AddScoped<IMemberRepository, MemberRepository>();

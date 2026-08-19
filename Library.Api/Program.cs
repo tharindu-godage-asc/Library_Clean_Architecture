@@ -11,11 +11,21 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var connectionString = builder.Configuration.GetConnectionString("LibraryDb")!;
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionString, name: "postgresql");
+
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+app.MapHealthChecks("/health");
+
+var enableSwagger = app.Configuration.GetValue(
+    "EnableSwagger",
+    app.Environment.IsDevelopment());
+
+if (enableSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
