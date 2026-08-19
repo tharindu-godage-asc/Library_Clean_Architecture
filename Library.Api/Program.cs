@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Library.Application;
 using Library.Infrastructure;
 using Library.Api.Endpoints;
@@ -10,6 +11,19 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+//ASP.NET Core Problem Details and adds a trace ID to every error response. 
+//The trace ID helps developers track a request through logs and diagnostics when troubleshooting issues.ASP.NET 
+//Core Problem Details and adds a trace ID to every error response.
+
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] =
+            Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
+    };
+});
 
 var connectionString = builder.Configuration.GetConnectionString("LibraryDb")!;
 builder.Services.AddHealthChecks()

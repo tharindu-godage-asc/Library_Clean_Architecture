@@ -21,7 +21,11 @@ namespace Library.Api.Common.Http
             return Results.Problem(
                 title: result.Error.Code,
                 detail: result.Error.Message,
-                statusCode: statusCode);
+                statusCode: statusCode,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = result.Error.Code
+                });
         }
     }
 }

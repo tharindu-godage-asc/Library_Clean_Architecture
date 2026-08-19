@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 using Library.Domain.Exceptions;
-using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Middleware
 {
@@ -39,36 +39,43 @@ namespace Library.Api.Middleware
                 context.Request.Method,
                 context.Request.Path);
 
-            var (statusCode, message) = exception switch
+            var (statusCode, code, title) = exception switch
             {
                 NotFoundException =>
-                    (StatusCodes.Status404NotFound, exception.Message),
+                    (StatusCodes.Status404NotFound, "Resource.NotFound", exception.Message),
 
                 ConflictException =>
-                    (StatusCodes.Status409Conflict, exception.Message),
+                    (StatusCodes.Status409Conflict, "Resource.Conflict", exception.Message),
 
                 BusinessRuleException =>
-                    (StatusCodes.Status400BadRequest, exception.Message),
+                    (StatusCodes.Status400BadRequest, "BusinessRule.Violation", exception.Message),
 
                 ValidationException =>
-                    (StatusCodes.Status400BadRequest, "Validation failed."),
+                    (StatusCodes.Status400BadRequest, "Validation.Failed", "Validation failed."),
 
                 _ =>
-                    (StatusCodes.Status500InternalServerError,
+                    (StatusCodes.Status500InternalServerError, "Unexpected.Error",
                      "An unexpected error occurred.")
             };
 
-            context.Response.ContentType = "application/json";
             context.Response.StatusCode = statusCode;
 
-            var response = new
-            {
-                StatusCode = statusCode,
-                Message = message
-            };
+            var problemDetailsService =
+                context.RequestServices.GetRequiredService<IProblemDetailsService>();
 
-            await context.Response.WriteAsync(
-                JsonSerializer.Serialize(response));
+            await problemDetailsService.WriteAsync(new ProblemDetailsContext
+            {
+                HttpContext = context,
+                ProblemDetails = new ProblemDetails
+                {
+                    Status = statusCode,
+                    Title = title,
+                    Extensions =
+                    {
+                        ["code"] = code
+                    }
+                }
+            });
         }
     }
 }
