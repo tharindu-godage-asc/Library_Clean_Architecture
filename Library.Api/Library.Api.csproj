@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Library.Application\Library.Application.csproj" />
     <ProjectReference Include="..\Library.Infrastructure\Library.Infrastructure.csproj" />
+    <ProjectReference Include="..\Library.ServiceDefaults\Library.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

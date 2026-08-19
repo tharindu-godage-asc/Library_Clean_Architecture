@@ -8,6 +8,10 @@
     <Project Path="Library.Domain/Library.Domain.csproj" Id="4599d3cd-114d-416e-8a60-fe9bb4b93c65" />
     <Project Path="Library.Infrastructure/Library.Infrastructure.csproj" Id="0f41c71f-21a3-4e25-bcc6-26d341336f65" />
   </Folder>
+  <Folder Name="/aspire/">
+    <Project Path="Library.AppHost/Library.AppHost.csproj" />
+    <Project Path="Library.ServiceDefaults/Library.ServiceDefaults.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="Library.Application.Tests/Library.Application.Tests.csproj" Id="d8623614-1ee0-446f-a8ea-39f36b2cc792" />
     <Project Path="Library.Infrastructure.Tests/Library.Infrastructure.Tests.csproj" Id="046e4780-68ba-4cfa-90c3-8f330bb31b18" />

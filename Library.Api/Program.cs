@@ -1,10 +1,13 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Library.Application;
 using Library.Infrastructure;
 using Library.Api.Endpoints;
 using Library.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -34,6 +37,11 @@ var app = builder.Build();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.MapHealthChecks("/health");
+
+app.MapHealthChecks("/alive", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("live")
+});
 
 var enableSwagger = app.Configuration.GetValue(
     "EnableSwagger",
