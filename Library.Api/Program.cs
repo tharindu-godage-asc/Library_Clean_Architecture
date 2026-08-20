@@ -58,5 +58,6 @@ app.UseHttpsRedirection();
 app.MapBookEndpoints();
 app.MapMemberEndpoints();
 app.MapBorrowingEndpoints();
+app.MapAuthEndpoints();
 
 app.Run();
