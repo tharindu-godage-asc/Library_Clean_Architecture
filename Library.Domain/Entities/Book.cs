@@ -36,6 +36,9 @@ namespace Library.Domain.Entities
             AvailableCopies = totalCopies;
         }
 
+        // Having two constructors serves two distinct purposes in Domain-Driven Design with EF Core:
+        // 1. Parameterless (private Book()): Required by EF Core to instantiate the object via reflection when loading existing data from the database without invoking domain validation or logic.
+        // 2. Parameterized (private Book(...)): Used exclusively by the domain (specifically via the static Create factory method) to enforce business rules and assign a new Guid identity when instantiating brand-new entities.
         internal static Result<Book> Create(
             string title,
             string author,
@@ -60,6 +63,9 @@ namespace Library.Domain.Entities
 
             return Result.Success(new Book(title, author, isbn, publishedYear, totalCopies));
         }
+        // internal  : Restricts visibility so the method can only be called within the same assembly (project), preventing external callers from bypassing application boundaries.
+        // static    : Allows the method to be called directly on the class itself (Book.Create(...)) without requiring an existing instance of Book.
+        // Result<T> : A custom generic return type (Result Pattern) that explicitly signals whether the operation succeeded (containing a Book) or failed (containing domain errors) without throwing expensive exceptions.
 
         internal Result UpdateDetails(
             string title,

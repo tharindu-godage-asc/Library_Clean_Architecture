@@ -1,6 +1,5 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Books;
-using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Books.Commands.CreateBook
 {
@@ -9,5 +8,5 @@ namespace Library.Application.Books.Commands.CreateBook
         string Author,
         string Isbn,
         int PublishedYear,
-        int TotalCopies) : IRequest<Result<BookResponse>>;
+        int TotalCopies) : ICommand<BookResponse>;
 }

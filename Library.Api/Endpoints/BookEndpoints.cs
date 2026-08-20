@@ -3,10 +3,9 @@ using Library.Api.Common.Http;
 using Library.Application.Books.Commands.CreateBook;
 using Library.Application.Books.Commands.DeleteBook;
 using Library.Application.Books.Commands.UpdateBook;
+using Library.Application.Books.Queries.GetAllBooks;
 using Library.Application.Books.Queries.GetBookById;
 using Library.Application.Contracts.Books;
-using Library.Application.Contracts.Mappings;
-using Library.Application.Services;
 using MediatR;
 
 namespace Library.Api.Endpoints
@@ -20,13 +19,28 @@ namespace Library.Api.Endpoints
                 .WithTags("Books");
 
             group.MapGet("/", async (
-                BookService service,
+                string? title,
+                string? author,
+                int? publishedYear,
+                string? sortBy,
+                bool? sortDescending,
+                int? pageNumber,
+                int? pageSize,
+                ISender sender,
                 CancellationToken cancellationToken) =>
             {
-                var books = await service.GetAllAsync(cancellationToken);
+                var query = new GetAllBooksQuery(
+                    title,
+                    author,
+                    publishedYear,
+                    sortBy,
+                    sortDescending ?? false,
+                    pageNumber ?? 1,
+                    pageSize ?? 20);
 
-                return Results.Ok(
-                    books.Select(b => b.ToResponse()));
+                var result = await sender.Send(query, cancellationToken);
+
+                return Results.Ok(result);
             });
 
             group.MapGet("/{id:guid}", async (

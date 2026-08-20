@@ -1,17 +1,17 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Books;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
 using Library.Domain.Shared;
-using MediatR;
 
 namespace Library.Application.Books.Queries.GetBookById
 {
-    public sealed class GetBookByIdHandler
-        : IRequestHandler<GetBookByIdQuery, Result<BookResponse>>
+    public sealed class GetBookByIdQueryHandler
+        : IQueryHandler<GetBookByIdQuery, Result<BookResponse>>
     {
         private readonly IBookRepository _bookRepository;
 
-        public GetBookByIdHandler(IBookRepository bookRepository)
+        public GetBookByIdQueryHandler(IBookRepository bookRepository)
         {
             _bookRepository = bookRepository;
         }

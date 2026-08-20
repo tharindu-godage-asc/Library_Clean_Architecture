@@ -6,8 +6,29 @@ services:
     container_name: library-db2
     restart: always
     environment:
-      POSTGRES_DB: librarydb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  library-api:
+    build:
+      context: .
+      dockerfile: Library.Api/Dockerfile
+    container_name: library-api
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      EnableSwagger: ${ENABLE_SWAGGER}
+      ConnectionStrings__LibraryDb: >-
+        Host=postgres;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

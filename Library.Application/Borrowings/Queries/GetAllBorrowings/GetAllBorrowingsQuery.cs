@@ -1,7 +1,7 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Borrowings;
-using MediatR;
 
 namespace Library.Application.Borrowings.Queries.GetAllBorrowings
 {
-    public sealed record GetAllBorrowingsQuery : IRequest<IEnumerable<BorrowingResponse>>;
+    public sealed record GetAllBorrowingsQuery : IQuery<IEnumerable<BorrowingResponse>>;
 }

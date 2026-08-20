@@ -1,7 +1,6 @@
-using Library.Domain.Shared;
-using MediatR;
+using Library.Application.Abstractions.Messaging;
 
 namespace Library.Application.Members.Commands.DeleteMember
 {
-    public sealed record DeleteMemberCommand(Guid Id) : IRequest<Result>;
+    public sealed record DeleteMemberCommand(Guid Id) : ICommand;
 }

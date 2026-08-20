@@ -1,16 +1,16 @@
+using Library.Application.Abstractions.Messaging;
 using Library.Application.Contracts.Borrowings;
 using Library.Application.Contracts.Mappings;
 using Library.Application.Interfaces;
-using MediatR;
 
 namespace Library.Application.Borrowings.Queries.GetAllBorrowings
 {
-    public sealed class GetAllBorrowingsHandler
-        : IRequestHandler<GetAllBorrowingsQuery, IEnumerable<BorrowingResponse>>
+    public sealed class GetAllBorrowingsQueryHandler
+        : IQueryHandler<GetAllBorrowingsQuery, IEnumerable<BorrowingResponse>>
     {
         private readonly IBorrowingRepository _borrowingRepository;
 
-        public GetAllBorrowingsHandler(IBorrowingRepository borrowingRepository)
+        public GetAllBorrowingsQueryHandler(IBorrowingRepository borrowingRepository)
         {
             _borrowingRepository = borrowingRepository;
         }
