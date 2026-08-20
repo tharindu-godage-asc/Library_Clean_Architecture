@@ -79,6 +79,13 @@ namespace Library.Domain.Shared
                 $"The member with Id = '{id}' was not found.");
         }
 
+        public static class Auth
+        {
+            public static readonly Error InvalidCredentials = Error.Unauthorized(
+                "Auth.InvalidCredentials",
+                "Invalid email or password.");
+        }
+
         public static class Borrowing
         {
             public static readonly Error InvalidDueDate = Error.Validation(

@@ -10,9 +10,9 @@ namespace Library.Domain.Entities
     {
         public string Name { get; private set; } = default!;
 
-        public string PasswordHash { get; set; } = string.Empty;
+        public string PasswordHash { get; private set; } = string.Empty;
 
-        public Role Role { get; set; } = Role.Member;
+        public Role Role { get; private set; } = Role.Member;
 
         public Email Email { get; private set; } = default!;
 
@@ -86,6 +86,16 @@ namespace Library.Domain.Entities
         internal void Deactivate()
         {
             IsActive = false;
+        }
+
+        internal void SetPassword(string passwordHash)
+        {
+            PasswordHash = passwordHash;
+        }
+
+        internal void AssignRole(Role role)
+        {
+            Role = role;
         }
 
         internal Result EnsureCanBorrow(int activeBorrowingsCount)

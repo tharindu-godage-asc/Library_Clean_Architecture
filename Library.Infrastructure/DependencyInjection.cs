@@ -1,6 +1,7 @@
 ﻿using Library.Application.Interfaces;
 using Library.Infrastructure.Data;
 using Library.Infrastructure.Repositories;
+using Library.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,7 @@ namespace Library.Infrastructure
             services.AddScoped<IMemberRepository, MemberRepository>();
             services.AddScoped<IBorrowingRepository, BorrowingRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
 
             return services;
         }

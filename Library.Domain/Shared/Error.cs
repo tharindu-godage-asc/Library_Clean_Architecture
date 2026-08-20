@@ -5,7 +5,8 @@ namespace Library.Domain.Shared
         Failure,
         Validation,
         NotFound,
-        Conflict
+        Conflict,
+        Unauthorized
     }
 
     public sealed record Error(string Code, string Message, ErrorType Type)
@@ -23,5 +24,8 @@ namespace Library.Domain.Shared
 
         public static Error Conflict(string code, string message) =>
             new(code, message, ErrorType.Conflict);
+
+        public static Error Unauthorized(string code, string message) =>
+            new(code, message, ErrorType.Unauthorized);
     }
 }
