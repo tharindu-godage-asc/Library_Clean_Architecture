@@ -1,9 +1,12 @@
-﻿using Library.Domain.Entities;
+﻿using Library.Application.Identity;
+using Library.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Library.Infrastructure.Data
 {
-    public class LibraryDbContext : DbContext
+    public class LibraryDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
     {
         public LibraryDbContext(
             DbContextOptions<LibraryDbContext> options)

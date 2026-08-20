@@ -1,4 +1,3 @@
-using Library.Domain.Enums;
 using Library.Domain.Primitives;
 using Library.Domain.Shared;
 using Library.Domain.ValueObjects;
@@ -9,10 +8,6 @@ namespace Library.Domain.Entities
     public class Member : Entity
     {
         public string Name { get; private set; } = default!;
-
-        public string PasswordHash { get; private set; } = string.Empty;
-
-        public Role Role { get; private set; } = Role.Member;
 
         public Email Email { get; private set; } = default!;
 
@@ -86,16 +81,6 @@ namespace Library.Domain.Entities
         internal void Deactivate()
         {
             IsActive = false;
-        }
-
-        internal void SetPassword(string passwordHash)
-        {
-            PasswordHash = passwordHash;
-        }
-
-        internal void AssignRole(Role role)
-        {
-            Role = role;
         }
 
         internal Result EnsureCanBorrow(int activeBorrowingsCount)

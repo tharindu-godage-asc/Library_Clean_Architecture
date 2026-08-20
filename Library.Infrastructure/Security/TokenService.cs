@@ -1,5 +1,5 @@
-﻿using Library.Application.Interfaces;
-using Library.Domain.Entities;
+using Library.Application.Identity;
+using Library.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,7 +17,7 @@ public class TokenService : ITokenService
         _configuration = configuration;
     }
 
-    public TokenResult GenerateToken(Member member)
+    public TokenResult GenerateToken(ApplicationUser user, IEnumerable<string> roles, Guid memberId)
     {
         var issuer = _configuration["Jwt:Issuer"]!;
         var audience = _configuration["Jwt:Audience"]!;
@@ -27,20 +27,20 @@ public class TokenService : ITokenService
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, member.Email.Value),
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
 
             new(
                 ClaimTypes.NameIdentifier,
-                member.Id.ToString()),
+                user.Id.ToString()),
 
             new(
                 ClaimTypes.Email,
-                member.Email.Value),
+                user.Email ?? string.Empty),
 
-            new(
-                ClaimTypes.Role,
-                member.Role.ToString())
+            new("memberId", memberId.ToString())
         };
+
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(signingKey));
