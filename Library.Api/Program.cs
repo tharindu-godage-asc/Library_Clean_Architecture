@@ -1,12 +1,48 @@
-using System.Diagnostics;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Library.Application;
-using Library.Infrastructure;
 using Library.Api.Endpoints;
 using Library.Api.Middleware;
+using Library.Application;
+using Library.Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Fetch JWT settings
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+var signingKey = builder.Configuration["Jwt:SigningKey"];
+
+if (string.IsNullOrWhiteSpace(signingKey))
+{
+    throw new InvalidOperationException(
+        "Jwt:SigningKey is not configured.");
+}
+
+// Add Authentication Services
+builder
+    .Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey))
+    };
+});
+
+builder.Services.AddAuthorization();
 builder.AddServiceDefaults();
 
 builder.Services.AddApplication();
@@ -54,6 +90,9 @@ if (enableSwagger)
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapBookEndpoints();
 app.MapMemberEndpoints();

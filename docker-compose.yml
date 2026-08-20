@@ -27,6 +27,7 @@ services:
       EnableSwagger: ${ENABLE_SWAGGER}
       ConnectionStrings__LibraryDb: >-
         Host=postgres;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      Jwt__SigningKey: ${Jwt__SigningKey}
     ports:
       - "8080:8080"
 

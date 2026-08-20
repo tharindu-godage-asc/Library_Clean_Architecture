@@ -11,15 +11,18 @@ namespace Library.Application.Auth.Commands.Login
     {
         private readonly IMemberRepository _memberRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ITokenService _tokenService;
         private readonly ILogger<LoginCommandHandler> _logger;
 
         public LoginCommandHandler(
             IMemberRepository memberRepository,
             IPasswordHasher passwordHasher,
+            ITokenService tokenService,
             ILogger<LoginCommandHandler> logger)
         {
             _memberRepository = memberRepository;
             _passwordHasher = passwordHasher;
+            _tokenService = tokenService;
             _logger = logger;
         }
 
@@ -45,6 +48,8 @@ namespace Library.Application.Auth.Commands.Login
                 return Result.Failure<LoginResponse>(DomainErrors.Auth.InvalidCredentials);
             }
 
+            var tokenResult = _tokenService.GenerateToken(member);
+
             _logger.LogInformation(
                 "Member {MemberId} logged in",
                 member.Id);
@@ -52,7 +57,9 @@ namespace Library.Application.Auth.Commands.Login
             return Result.Success(new LoginResponse
             {
                 Id = member.Id,
-                Email = member.Email.Value
+                Email = member.Email.Value,
+                Token = tokenResult.Token,
+                Expiration = tokenResult.ExpiresAtUtc
             });
         }
     }
