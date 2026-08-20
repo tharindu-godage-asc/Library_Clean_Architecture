@@ -1,13 +1,18 @@
-using System;
+using Library.Domain.Enums;
 using Library.Domain.Primitives;
 using Library.Domain.Shared;
 using Library.Domain.ValueObjects;
+using System;
 
 namespace Library.Domain.Entities
 {
     public class Member : Entity
     {
         public string Name { get; private set; } = default!;
+
+        public string PasswordHash { get; set; } = string.Empty;
+
+        public Role Role { get; set; } = Role.Member;
 
         public Email Email { get; private set; } = default!;
 
