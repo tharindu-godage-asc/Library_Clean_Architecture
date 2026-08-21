@@ -54,7 +54,8 @@ namespace Library.Api.Endpoints
                     ? Results.Created($"/api/borrowings/{result.Value.Id}", result.Value)
                     : result.ToProblemDetails();
             })
-            .AddEndpointFilter<ValidationFilter<CreateBorrowingRequest>>();
+            .AddEndpointFilter<ValidationFilter<CreateBorrowingRequest>>()
+            .RequireAuthorization();
 
             group.MapPost("/{id:guid}/return", async (
                 Guid id,
@@ -66,7 +67,8 @@ namespace Library.Api.Endpoints
                 return result.IsSuccess
                     ? Results.NoContent()
                     : result.ToProblemDetails();
-            });
+            })
+            .RequireAuthorization("OwnBorrowing");
 
             return app;
         }

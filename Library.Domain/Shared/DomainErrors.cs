@@ -84,6 +84,10 @@ namespace Library.Domain.Shared
             public static readonly Error InvalidCredentials = Error.Unauthorized(
                 "Auth.InvalidCredentials",
                 "Invalid email or password.");
+
+            public static readonly Error Forbidden = Error.Forbidden(
+                "Auth.Forbidden",
+                "You are not allowed to perform this action for another member.");
         }
 
         public static class Borrowing

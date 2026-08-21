@@ -39,7 +39,8 @@ namespace Library.Api.Endpoints
                 return result.IsSuccess
                     ? Results.Ok(result.Value)
                     : result.ToProblemDetails();
-            });
+            })
+            .RequireAuthorization("OwnMember");
 
             group.MapPost("/", async (
                 CreateMemberRequest request,
@@ -78,7 +79,8 @@ namespace Library.Api.Endpoints
                     ? Results.Ok(result.Value)
                     : result.ToProblemDetails();
             })
-            .AddEndpointFilter<ValidationFilter<UpdateMemberRequest>>();
+            .AddEndpointFilter<ValidationFilter<UpdateMemberRequest>>()
+            .RequireAuthorization("OwnMember");
 
             group.MapDelete("/{id:guid}", async (
                 Guid id,
@@ -93,17 +95,18 @@ namespace Library.Api.Endpoints
             })
             .RequireAuthorization("AdminOnly");
 
-            group.MapGet("/{memberId:guid}/borrowings", async (
-                Guid memberId,
+            group.MapGet("/{id:guid}/borrowings", async (
+                Guid id,
                 ISender sender,
                 CancellationToken cancellationToken) =>
             {
-                var result = await sender.Send(new GetBorrowingsByMemberQuery(memberId), cancellationToken);
+                var result = await sender.Send(new GetBorrowingsByMemberQuery(id), cancellationToken);
 
                 return result.IsSuccess
                     ? Results.Ok(result.Value)
                     : result.ToProblemDetails();
-            });
+            })
+            .RequireAuthorization("OwnMember");
 
             return app;
         }

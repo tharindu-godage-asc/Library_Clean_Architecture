@@ -1,3 +1,4 @@
+using Library.Api.Authorization;
 using Library.Api.Endpoints;
 using Library.Api.Middleware;
 using Library.Application;
@@ -5,6 +6,7 @@ using Library.Application.Identity;
 using Library.Infrastructure;
 using Library.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
@@ -48,7 +50,13 @@ builder.Services
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.Admin));
+    options.AddPolicy("OwnMember", policy => policy.Requirements.Add(new OwnMemberRequirement()));
+    options.AddPolicy("OwnBorrowing", policy => policy.Requirements.Add(new OwnBorrowingRequirement()));
 });
+
+builder.Services.AddScoped<IAuthorizationHandler, OwnMemberHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, OwnBorrowingHandler>();
+
 builder.AddServiceDefaults();
 
 builder.Services.AddApplication();
@@ -58,7 +66,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 //ASP.NET Core Problem Details and adds a trace ID to every error response. 
-//The trace ID helps developers track a request through logs and diagnostics when troubleshooting issues.ASP.NET 
+//The trace ID helps track a request through logs and diagnostics when troubleshooting issues.ASP.NET 
 //Core Problem Details and adds a trace ID to every error response.
 
 builder.Services.AddProblemDetails(options =>

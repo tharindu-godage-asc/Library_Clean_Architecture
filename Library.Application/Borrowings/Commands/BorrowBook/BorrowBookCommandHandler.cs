@@ -15,6 +15,7 @@ namespace Library.Application.Borrowings.Commands.BorrowBook
         private readonly IMemberRepository _memberRepository;
         private readonly IBorrowingRepository _borrowingRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICurrentUserService _currentUser;
         private readonly ILogger<BorrowBookCommandHandler> _logger;
 
         public BorrowBookCommandHandler(
@@ -22,12 +23,14 @@ namespace Library.Application.Borrowings.Commands.BorrowBook
             IMemberRepository memberRepository,
             IBorrowingRepository borrowingRepository,
             IUnitOfWork unitOfWork,
+            ICurrentUserService currentUser,
             ILogger<BorrowBookCommandHandler> logger)
         {
             _bookRepository = bookRepository;
             _memberRepository = memberRepository;
             _borrowingRepository = borrowingRepository;
             _unitOfWork = unitOfWork;
+            _currentUser = currentUser;
             _logger = logger;
         }
 
@@ -35,6 +38,15 @@ namespace Library.Application.Borrowings.Commands.BorrowBook
             BorrowBookCommand request,
             CancellationToken cancellationToken)
         {
+            if (!_currentUser.IsAdmin && _currentUser.MemberId != request.MemberId)
+            {
+                _logger.LogWarning(
+                    "Borrow rejected: caller {CallerMemberId} attempted to borrow for member {MemberId}",
+                    _currentUser.MemberId,
+                    request.MemberId);
+                return Result.Failure<BorrowingResponse>(DomainErrors.Auth.Forbidden);
+            }
+
             var member = await _memberRepository.GetByIdAsync(request.MemberId, cancellationToken);
 
             if (member is null)
