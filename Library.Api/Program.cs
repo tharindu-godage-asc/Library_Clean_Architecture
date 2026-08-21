@@ -22,8 +22,8 @@ if (string.IsNullOrWhiteSpace(signingKey))
 }
 
 // Add Authentication Services
-builder
-    .Services.AddAuthentication(options =>
+builder.Services
+    .AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
