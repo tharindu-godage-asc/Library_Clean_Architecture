@@ -26,7 +26,8 @@ namespace Library.Api.Endpoints
                 var members = await sender.Send(new GetAllMembersQuery(), cancellationToken);
 
                 return Results.Ok(members);
-            });
+            })
+            .RequireAuthorization("AdminOnly");
 
             group.MapGet("/{id:guid}", async (
                 Guid id,
@@ -56,7 +57,8 @@ namespace Library.Api.Endpoints
                     ? Results.Created($"/api/members/{result.Value.Id}", result.Value)
                     : result.ToProblemDetails();
             })
-            .AddEndpointFilter<ValidationFilter<CreateMemberRequest>>();
+            .AddEndpointFilter<ValidationFilter<CreateMemberRequest>>()
+            .RequireAuthorization("AdminOnly");
 
             group.MapPut("/{id:guid}", async (
                 Guid id,
@@ -88,7 +90,8 @@ namespace Library.Api.Endpoints
                 return result.IsSuccess
                     ? Results.NoContent()
                     : result.ToProblemDetails();
-            });
+            })
+            .RequireAuthorization("AdminOnly");
 
             group.MapGet("/{memberId:guid}/borrowings", async (
                 Guid memberId,

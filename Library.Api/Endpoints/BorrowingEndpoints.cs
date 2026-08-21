@@ -24,7 +24,8 @@ namespace Library.Api.Endpoints
                 var borrowings = await sender.Send(new GetAllBorrowingsQuery(), cancellationToken);
 
                 return Results.Ok(borrowings);
-            });
+            })
+            .RequireAuthorization("AdminOnly");
 
             group.MapGet("/{id:guid}", async (
                 Guid id,

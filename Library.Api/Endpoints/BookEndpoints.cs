@@ -73,7 +73,8 @@ namespace Library.Api.Endpoints
                     ? Results.Created($"/api/books/{result.Value.Id}", result.Value)
                     : result.ToProblemDetails();
             })
-            .AddEndpointFilter<ValidationFilter<CreateBookRequest>>();
+            .AddEndpointFilter<ValidationFilter<CreateBookRequest>>()
+            .RequireAuthorization("AdminOnly");
 
             group.MapPut("/{id:guid}", async (
                 Guid id,
@@ -95,7 +96,8 @@ namespace Library.Api.Endpoints
                     ? Results.Ok(result.Value)
                     : result.ToProblemDetails();
             })
-            .AddEndpointFilter<ValidationFilter<UpdateBookRequest>>();
+            .AddEndpointFilter<ValidationFilter<UpdateBookRequest>>()
+            .RequireAuthorization("AdminOnly");
 
             group.MapDelete("/{id:guid}", async (
                 Guid id,
@@ -107,7 +109,8 @@ namespace Library.Api.Endpoints
                 return result.IsSuccess
                     ? Results.NoContent()
                     : result.ToProblemDetails();
-            });
+            })
+            .RequireAuthorization("AdminOnly");
 
             return app;
         }

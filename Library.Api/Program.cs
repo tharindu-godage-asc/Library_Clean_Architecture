@@ -1,11 +1,14 @@
 using Library.Api.Endpoints;
 using Library.Api.Middleware;
 using Library.Application;
+using Library.Application.Identity;
 using Library.Infrastructure;
+using Library.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,7 +45,10 @@ builder.Services
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.Admin));
+});
 builder.AddServiceDefaults();
 
 builder.Services.AddApplication();
@@ -93,6 +99,11 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+using (var scope = app.Services.CreateScope())
+{
+    await AdminSeeder.SeedAsync(scope.ServiceProvider);
+}
 
 app.MapBookEndpoints();
 app.MapMemberEndpoints();
