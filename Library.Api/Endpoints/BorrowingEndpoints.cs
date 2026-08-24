@@ -37,7 +37,8 @@ namespace Library.Api.Endpoints
                 return result.IsSuccess
                     ? Results.Ok(result.Value)
                     : result.ToProblemDetails();
-            });
+            })
+            .RequireAuthorization("OwnBorrowing");
 
             group.MapPost("/", async (
                 CreateBorrowingRequest request,
