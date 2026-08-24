@@ -7,5 +7,6 @@ namespace Library.Application.Members.Commands.UpdateMember
         Guid Id,
         string Name,
         string Email,
-        string PhoneNumber) : ICommand<MemberResponse>;
+        string PhoneNumber,
+        bool? IsActive) : ICommand<MemberResponse>;
 }

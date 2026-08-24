@@ -13,15 +13,18 @@ namespace Library.Application.Members.Commands.UpdateMember
         private readonly IMemberRepository _memberRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UpdateMemberCommandHandler> _logger;
+        private readonly ICurrentUserService _currentUser;
 
         public UpdateMemberCommandHandler(
             IMemberRepository memberRepository,
             IUnitOfWork unitOfWork,
-            ILogger<UpdateMemberCommandHandler> logger)
+            ILogger<UpdateMemberCommandHandler> logger,
+            ICurrentUserService currentUser)
         {
             _memberRepository = memberRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<MemberResponse>> Handle(
@@ -47,6 +50,24 @@ namespace Library.Application.Members.Commands.UpdateMember
                     request.Id,
                     request.Email);
                 return Result.Failure<MemberResponse>(DomainErrors.Member.EmailAlreadyExists);
+            }
+
+            if (request.IsActive.HasValue && request.IsActive.Value != member.IsActive)
+            {
+                if (_currentUser.IsAdmin)
+                {
+                    if (request.IsActive.Value)
+                        member.Activate();
+                    else
+                        member.Deactivate();
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Member update: caller {CallerMemberId} attempted to change IsActive on member {MemberId} without admin rights — ignored",
+                        _currentUser.MemberId,
+                        request.Id);
+                }
             }
 
             var updateResult = member.UpdateDetails(

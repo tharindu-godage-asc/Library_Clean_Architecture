@@ -71,7 +71,8 @@ namespace Library.Api.Endpoints
                     id,
                     request.Name,
                     request.Email,
-                    request.PhoneNumber);
+                    request.PhoneNumber,
+                    request.IsActive);
 
                 var result = await sender.Send(command, cancellationToken);
 
