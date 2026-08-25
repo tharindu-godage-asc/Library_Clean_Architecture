@@ -7,7 +7,6 @@ using Library.Infrastructure;
 using Library.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Security.Claims;
@@ -86,12 +85,7 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.MapHealthChecks("/health");
-
-app.MapHealthChecks("/alive", new HealthCheckOptions
-{
-    Predicate = registration => registration.Tags.Contains("live")
-});
+app.MapDefaultEndpoints();
 
 var enableSwagger = app.Configuration.GetValue(
     "EnableSwagger",
