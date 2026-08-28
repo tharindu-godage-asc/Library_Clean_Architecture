@@ -15,6 +15,8 @@ namespace Library.Domain.Entities
 
         public bool IsActive { get; private set; } = true;
 
+        public string? KeycloakId { get; private set; }
+
         private Member() : base(Guid.Empty) { } // Required by EF Core
 
         private Member(
@@ -48,6 +50,42 @@ namespace Library.Domain.Entities
                 return Result.Failure<Member>(emailResult.Error);
 
             return Result.Success(new Member(name, emailResult.Value, phoneNumber));
+        }
+
+        /// <summary>
+        /// JIT-provisioning path for a Keycloak-authenticated identity with no existing Member
+        /// record (see MemberProvisioningService). Phone number can't be required here like the
+        /// admin-facing Create() factory does — Keycloak's standard OIDC scopes (openid/profile/
+        /// email) never carry one — so it's left blank; the member can fill it in later via the
+        /// existing PUT /api/members/{id} self-edit endpoint.
+        /// </summary>
+        internal static Result<Member> CreateFromKeycloak(
+            string keycloakId,
+            string name,
+            string email)
+        {
+            if (string.IsNullOrWhiteSpace(keycloakId))
+                throw new ArgumentException("Keycloak id is required.", nameof(keycloakId));
+
+            var emailResult = Library.Domain.ValueObjects.Email.Create(email);
+
+            if (emailResult.IsFailure)
+                return Result.Failure<Member>(emailResult.Error);
+
+            var member = new Member(
+                string.IsNullOrWhiteSpace(name) ? email : name,
+                emailResult.Value,
+                string.Empty)
+            {
+                KeycloakId = keycloakId
+            };
+
+            return Result.Success(member);
+        }
+
+        internal void LinkKeycloakId(string keycloakId)
+        {
+            KeycloakId = keycloakId;
         }
 
         internal Result UpdateDetails(

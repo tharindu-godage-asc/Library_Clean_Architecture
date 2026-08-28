@@ -4,6 +4,7 @@ using Library.Api.Endpoints;
 using Library.Api.Middleware;
 using Library.Application;
 using Library.Application.Identity;
+using Library.Application.Interfaces;
 using Library.Infrastructure;
 using Library.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
@@ -81,6 +82,10 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddScoped<IAuthorizationHandler, OwnMemberHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, OwnBorrowingHandler>();
 
+// Phase 3 of the Keycloak rollout — JIT Member provisioning.
+// See docs/keycloak-authserver-phase3-member-provisioning.md.
+builder.Services.AddScoped<IMemberProvisioningService, MemberProvisioningService>();
+
 builder.AddServiceDefaults();
 
 builder.Services.AddApplication();
@@ -125,6 +130,7 @@ if (enableSwagger)
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseMiddleware<MemberProvisioningMiddleware>();
 app.UseAuthorization();
 
 using (var scope = app.Services.CreateScope())

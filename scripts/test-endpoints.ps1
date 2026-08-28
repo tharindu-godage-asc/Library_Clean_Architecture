@@ -6,13 +6,19 @@ Member A (on Member B's data) / Admin. Creates its own test data and cleans up a
 Usage:
     $env:ADMIN_EMAIL = "admin@example.com"
     $env:ADMIN_PASSWORD = "..."
-    .\scripts\test-endpoints.ps1 [-BaseUrl "http://localhost:5281"]
+    .\scripts\test-endpoints.ps1 [-BaseUrl "https://localhost:7282"]
 
 If ADMIN_EMAIL / ADMIN_PASSWORD are not set, you'll be prompted for them.
+
+NOTE: Must use the HTTPS base URL, not HTTP. The API's UseHttpsRedirection() 307-redirects
+HTTP requests to HTTPS, and both curl and PowerShell's web client strip the Authorization
+header when following a redirect to a different port — every authenticated call silently
+loses its Bearer token and comes back 401 if you point this at the HTTP port. Confirmed
+2026-08-27 (see docs/keycloak-session-2026-08-27-summary.md).
 #>
 
 param(
-    [string]$BaseUrl = "http://localhost:5281"
+    [string]$BaseUrl = "https://localhost:7282"
 )
 
 $script:results = @()

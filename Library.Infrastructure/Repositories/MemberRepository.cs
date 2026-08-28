@@ -26,6 +26,12 @@ namespace Library.Infrastructure.Repositories
                 .FirstOrDefaultAsync(m => m.Email.Value == email, cancellationToken);
         }
 
+        public async Task<Member?> GetByKeycloakIdAsync(string keycloakId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Members
+                .FirstOrDefaultAsync(m => m.KeycloakId == keycloakId, cancellationToken);
+        }
+
         public async Task<IEnumerable<Member>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             return await _context.Members.ToListAsync(cancellationToken);
