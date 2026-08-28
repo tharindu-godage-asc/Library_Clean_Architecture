@@ -1,14 +1,24 @@
-<#
+﻿<#
 Automated authorization-matrix smoke test for the Library API.
 Covers auth, books, members, and borrowings across: no token / Member A (self) /
 Member A (on Member B's data) / Admin. Creates its own test data and cleans up after itself.
 
+Also covers the same coexistence-window matrix using Keycloak-issued tokens (see the
+"Keycloak coexistence" section) — creates its own throwaway Keycloak users via the Admin
+REST API and a dedicated `library-test-cli` client (auto-created on first run; see
+docs/keycloak-authserver-phase4-prep-test-tooling.md for why a separate client instead of
+enabling password grants on the real `library-flutter` client). Cleans those up too.
+
 Usage:
     $env:ADMIN_EMAIL = "admin@example.com"
     $env:ADMIN_PASSWORD = "..."
-    .\scripts\test-endpoints.ps1 [-BaseUrl "https://localhost:7282"]
+    $env:KEYCLOAK_ADMIN = "admin"
+    $env:KEYCLOAK_ADMIN_PASSWORD = "..."
+    .\scripts\test-endpoints.ps1 [-BaseUrl "https://localhost:7282"] [-KeycloakBaseUrl "http://localhost:8081"] [-SkipKeycloak]
 
-If ADMIN_EMAIL / ADMIN_PASSWORD are not set, you'll be prompted for them.
+If ADMIN_EMAIL / ADMIN_PASSWORD / KEYCLOAK_ADMIN / KEYCLOAK_ADMIN_PASSWORD are not set, you'll
+be prompted for them. Pass -SkipKeycloak to run only the legacy-auth matrix (e.g. Keycloak isn't
+running locally right now).
 
 NOTE: Must use the HTTPS base URL, not HTTP. The API's UseHttpsRedirection() 307-redirects
 HTTP requests to HTTPS, and both curl and PowerShell's web client strip the Authorization
@@ -18,17 +28,26 @@ loses its Bearer token and comes back 401 if you point this at the HTTP port. Co
 #>
 
 param(
-    [string]$BaseUrl = "https://localhost:7282"
+    [string]$BaseUrl = "https://localhost:7282",
+    [string]$KeycloakBaseUrl = "http://localhost:8081",
+    [string]$KeycloakRealm = "library",
+    [string]$KeycloakTestClientId = "library-test-cli",
+    [switch]$SkipKeycloak
 )
 
 $script:results = @()
 
 function Invoke-Api {
     param(
-        [Parameter(Mandatory)] [string]$Method,
-        [Parameter(Mandatory)] [string]$Path,
+        [string]$Method,
+        [string]$Path,
         [object]$Body = $null,
-        [string]$Token = $null
+        [string]$Token = $null,
+        # Escape hatch for calling a server other than $BaseUrl (Keycloak's own endpoints) —
+        # when set, this is used verbatim instead of "$BaseUrl$Path".
+        [string]$FullUri = $null,
+        # Keycloak's token/admin-token endpoints take form-urlencoded, not JSON.
+        [string]$ContentType = "application/json"
     )
 
     $headers = @{}
@@ -36,14 +55,21 @@ function Invoke-Api {
 
     $params = @{
         Method          = $Method
-        Uri             = "$BaseUrl$Path"
+        Uri             = if ($FullUri) { $FullUri } else { "$BaseUrl$Path" }
         Headers         = $headers
         UseBasicParsing = $true
         ErrorAction     = "Stop"
     }
     if ($null -ne $Body) {
-        $params["Body"] = ($Body | ConvertTo-Json -Depth 10)
-        $params["ContentType"] = "application/json"
+        if ($ContentType -eq "application/x-www-form-urlencoded") {
+            $params["Body"] = $Body
+        } else {
+            # -InputObject (not the pipeline) is required here: piping a single-element array
+            # into ConvertTo-Json unrolls it back to a bare object instead of a JSON array,
+            # which breaks callers that need e.g. Keycloak role-mapping's `[{...}]` body shape.
+            $params["Body"] = (ConvertTo-Json -InputObject $Body -Depth 10)
+        }
+        $params["ContentType"] = $ContentType
     }
 
     try {
@@ -109,6 +135,149 @@ function Write-Section {
     Write-Host "== $Title ==" -ForegroundColor Cyan
 }
 
+# --- Keycloak helpers (Admin REST API + token endpoints) ---
+# See docs/keycloak-authserver-phase4-prep-test-tooling.md for why this uses a dedicated
+# "library-test-cli" client rather than enabling password grants on the real library-flutter one.
+
+function Get-KeycloakAdminToken {
+    param([Parameter(Mandatory)] [string]$Username, [Parameter(Mandatory)] [string]$Password)
+
+    # master realm's built-in "admin-cli" client has Direct Access Grants on by default in
+    # stock Keycloak — no realm/client setup needed for this call.
+    # Built via -join, not string interpolation with literal "&": Windows PowerShell 5.1's
+    # parser misreads an "&" placed immediately next to a "$(...)"/"$var" interpolation inside
+    # a double-quoted string ("the & operator is reserved for future use").
+    $body = @(
+        "grant_type=password"
+        "client_id=admin-cli"
+        "username=$([uri]::EscapeDataString($Username))"
+        "password=$([uri]::EscapeDataString($Password))"
+    ) -join [char]38
+    $r = Invoke-Api -Method POST -FullUri "$KeycloakBaseUrl/realms/master/protocol/openid-connect/token" -Body $body -ContentType "application/x-www-form-urlencoded"
+    if ($r.StatusCode -ne 200) { throw "Could not get Keycloak admin token (status $($r.StatusCode)): $($r.Body | Out-String)" }
+    return $r.Body.access_token
+}
+
+function Ensure-KeycloakTestClient {
+    param([Parameter(Mandatory)] [string]$AdminToken)
+
+    $existing = Invoke-Api -Method GET -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/clients?clientId=$KeycloakTestClientId" -Token $AdminToken
+    # Wrap in @() before checking .Count: Windows PowerShell 5.1's ConvertFrom-Json silently
+    # unwraps a single-element JSON array into a bare object, which would make .Count $null here
+    # and break idempotency on every run after the first (would try to re-create -> 409).
+    $existingClients = @($existing.Body)
+    if ($existing.StatusCode -eq 200 -and $existingClients.Count -gt 0) {
+        $clientObj = $existingClients[0]
+        Write-Host "  Keycloak test client '$KeycloakTestClientId' already exists — reusing it" -ForegroundColor Gray
+    }
+    else {
+        $createBody = @{
+            clientId                  = $KeycloakTestClientId
+            name                      = "Library automated test tooling"
+            protocol                  = "openid-connect"
+            publicClient              = $false
+            standardFlowEnabled       = $false
+            directAccessGrantsEnabled = $true
+            implicitFlowEnabled       = $false
+            serviceAccountsEnabled    = $false
+            protocolMappers           = @(
+                @{
+                    name            = "audience-mapper"
+                    protocol        = "openid-connect"
+                    protocolMapper  = "oidc-audience-mapper"
+                    consentRequired = $false
+                    config          = @{
+                        "included.client.audience" = "library-flutter"
+                        "id.token.claim"            = "false"
+                        "access.token.claim"        = "true"
+                    }
+                }
+            )
+        }
+        $create = Invoke-Api -Method POST -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/clients" -Body $createBody -Token $AdminToken
+        if ($create.StatusCode -ne 201) { throw "Could not create Keycloak test client (status $($create.StatusCode)): $($create.Body | Out-String)" }
+        Write-Host "  Created Keycloak test client '$KeycloakTestClientId'" -ForegroundColor Gray
+
+        $lookup = Invoke-Api -Method GET -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/clients?clientId=$KeycloakTestClientId" -Token $AdminToken
+        $clientObj = $lookup.Body[0]
+    }
+
+    $secretResp = Invoke-Api -Method GET -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/clients/$($clientObj.id)/client-secret" -Token $AdminToken
+    if ($secretResp.StatusCode -ne 200) { throw "Could not fetch Keycloak test client secret (status $($secretResp.StatusCode))" }
+    return $secretResp.Body.value
+}
+
+function New-KeycloakUser {
+    param(
+        [Parameter(Mandatory)] [string]$AdminToken,
+        [Parameter(Mandatory)] [string]$Email,
+        [Parameter(Mandatory)] [string]$FirstName,
+        [Parameter(Mandatory)] [string]$Password
+    )
+
+    $body = @{
+        username      = $Email
+        email         = $Email
+        firstName     = $FirstName
+        enabled       = $true
+        emailVerified = $true
+        credentials   = @(@{ type = "password"; value = $Password; temporary = $false })
+    }
+    $create = Invoke-Api -Method POST -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/users" -Body $body -Token $AdminToken
+    if ($create.StatusCode -ne 201) { throw "Could not create Keycloak user $Email (status $($create.StatusCode)): $($create.Body | Out-String)" }
+
+    $lookupQuery = @(
+        "email=$([uri]::EscapeDataString($Email))"
+        "exact=true"
+    ) -join [char]38
+    $lookup = Invoke-Api -Method GET -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/users?$lookupQuery" -Token $AdminToken
+    if ($lookup.StatusCode -ne 200 -or -not $lookup.Body -or $lookup.Body.Count -eq 0) { throw "Created Keycloak user $Email but could not look it up afterward" }
+    return $lookup.Body[0].id
+}
+
+function Add-KeycloakRealmRole {
+    param(
+        [Parameter(Mandatory)] [string]$AdminToken,
+        [Parameter(Mandatory)] [string]$UserId,
+        [Parameter(Mandatory)] [string]$RoleName
+    )
+
+    $role = Invoke-Api -Method GET -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/roles/$RoleName" -Token $AdminToken
+    if ($role.StatusCode -ne 200) { throw "Could not look up Keycloak realm role '$RoleName' (status $($role.StatusCode))" }
+
+    $assign = Invoke-Api -Method POST -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/users/$UserId/role-mappings/realm" -Body @($role.Body) -Token $AdminToken
+    if ($assign.StatusCode -ne 204) { throw "Could not assign role '$RoleName' to Keycloak user $UserId (status $($assign.StatusCode))" }
+}
+
+function Remove-KeycloakUser {
+    param([Parameter(Mandatory)] [string]$AdminToken, [string]$UserId)
+
+    if (-not $UserId) { return }
+    $r = Invoke-Api -Method DELETE -FullUri "$KeycloakBaseUrl/admin/realms/$KeycloakRealm/users/$UserId" -Token $AdminToken
+    if ($r.StatusCode -in 200, 204) { Write-Host "  Deleted Keycloak user $UserId" -ForegroundColor Gray }
+    else { Write-Host "  ! Could not delete Keycloak user $UserId (status $($r.StatusCode))" -ForegroundColor Yellow }
+}
+
+function Get-KeycloakUserToken {
+    param(
+        [Parameter(Mandatory)] [string]$ClientSecret,
+        [Parameter(Mandatory)] [string]$Email,
+        [Parameter(Mandatory)] [string]$Password
+    )
+
+    $body = @(
+        "grant_type=password"
+        "client_id=$KeycloakTestClientId"
+        "client_secret=$([uri]::EscapeDataString($ClientSecret))"
+        "username=$([uri]::EscapeDataString($Email))"
+        "password=$([uri]::EscapeDataString($Password))"
+        "scope=openid%20profile%20email"
+    ) -join [char]38
+    $r = Invoke-Api -Method POST -FullUri "$KeycloakBaseUrl/realms/$KeycloakRealm/protocol/openid-connect/token" -Body $body -ContentType "application/x-www-form-urlencoded"
+    if ($r.StatusCode -ne 200) { throw "Could not get Keycloak token for $Email (status $($r.StatusCode)): $($r.Body | Out-String)" }
+    return $r.Body.access_token
+}
+
 # --- Credentials ---
 
 $adminEmail = $env:ADMIN_EMAIL
@@ -124,6 +293,21 @@ if (-not $adminPassword) {
     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
 }
 
+$keycloakAdmin = $env:KEYCLOAK_ADMIN
+$keycloakAdminPassword = $env:KEYCLOAK_ADMIN_PASSWORD
+
+if (-not $SkipKeycloak) {
+    if (-not $keycloakAdmin) {
+        $keycloakAdmin = Read-Host "Keycloak admin username"
+    }
+    if (-not $keycloakAdminPassword) {
+        $secureKcPwd = Read-Host "Keycloak admin password" -AsSecureString
+        $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureKcPwd)
+        $keycloakAdminPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+        [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+}
+
 $suffix = [guid]::NewGuid().ToString("N").Substring(0, 8)
 $testPassword = "TestPass123!"
 
@@ -133,6 +317,14 @@ $memberB = $null
 $adminCreatedMemberId = $null
 $borrowingA = $null
 $borrowingB = $null
+
+# Keycloak coexistence-section state (cleaned up in `finally` below)
+$kcAdminUserId = $null
+$kcMemberAUserId = $null
+$kcMemberBUserId = $null
+$kcAdminMemberId = $null
+$kcMemberAId = $null
+$kcMemberBId = $null
 
 try {
     Write-Section "Auth setup"
@@ -334,6 +526,92 @@ try {
 
     $returnBorrowingBAdmin = Invoke-Api -Method POST -Path "/api/borrowings/$borrowingB/return" -Token $adminToken
     Assert-Status "POST /api/borrowings/{id}/return as Admin -> 200/204" -Expected 200 -Actual $(if ($returnBorrowingBAdmin.StatusCode -eq 204) { 200 } else { $returnBorrowingBAdmin.StatusCode })
+
+    Write-Section "Keycloak coexistence"
+
+    if ($SkipKeycloak) {
+        Write-Host "  Skipped (-SkipKeycloak)" -ForegroundColor Yellow
+    }
+    else {
+        $kcAdminToken = Get-KeycloakAdminToken -Username $keycloakAdmin -Password $keycloakAdminPassword
+        $kcClientSecret = Ensure-KeycloakTestClient -AdminToken $kcAdminToken
+
+        $kcAdminEmail = "adminkc.$suffix@test.local"
+        $kcMemberAEmail = "memberakc.$suffix@test.local"
+        $kcMemberBEmail = "memberbkc.$suffix@test.local"
+
+        $kcAdminUserId = New-KeycloakUser -AdminToken $kcAdminToken -Email $kcAdminEmail -FirstName "Admin KC" -Password $testPassword
+        Add-KeycloakRealmRole -AdminToken $kcAdminToken -UserId $kcAdminUserId -RoleName "Admin"
+        $kcMemberAUserId = New-KeycloakUser -AdminToken $kcAdminToken -Email $kcMemberAEmail -FirstName "Member AKC" -Password $testPassword
+        $kcMemberBUserId = New-KeycloakUser -AdminToken $kcAdminToken -Email $kcMemberBEmail -FirstName "Member BKC" -Password $testPassword
+
+        $kcAdminUserToken = Get-KeycloakUserToken -ClientSecret $kcClientSecret -Email $kcAdminEmail -Password $testPassword
+        $kcMemberAToken = Get-KeycloakUserToken -ClientSecret $kcClientSecret -Email $kcMemberAEmail -Password $testPassword
+        $kcMemberBToken = Get-KeycloakUserToken -ClientSecret $kcClientSecret -Email $kcMemberBEmail -Password $testPassword
+
+        # MemberProvisioningMiddleware JIT-provisions a Member row on any request carrying a
+        # valid Keycloak token — /api/keycloak-whoami is just the cheapest way to trigger it.
+        Invoke-Api -Method GET -Path "/api/keycloak-whoami" -Token $kcAdminUserToken | Out-Null
+        Invoke-Api -Method GET -Path "/api/keycloak-whoami" -Token $kcMemberAToken | Out-Null
+        Invoke-Api -Method GET -Path "/api/keycloak-whoami" -Token $kcMemberBToken | Out-Null
+
+        $kcMembersList = Invoke-Api -Method GET -Path "/api/members" -Token $kcAdminUserToken
+        Assert-Status "GET /api/members as Keycloak Admin -> 200" -Expected 200 -Actual $kcMembersList.StatusCode
+
+        $kcAdminMember = $kcMembersList.Body | Where-Object { $_.email -eq $kcAdminEmail }
+        $kcMemberARecord = $kcMembersList.Body | Where-Object { $_.email -eq $kcMemberAEmail }
+        $kcMemberBRecord = $kcMembersList.Body | Where-Object { $_.email -eq $kcMemberBEmail }
+        Assert-True "JIT-provisioned Member row exists for Keycloak Admin" -Condition ($null -ne $kcAdminMember)
+        Assert-True "JIT-provisioned Member row exists for Keycloak Member A" -Condition ($null -ne $kcMemberARecord)
+        Assert-True "JIT-provisioned Member row exists for Keycloak Member B" -Condition ($null -ne $kcMemberBRecord)
+
+        $kcAdminMemberId = $kcAdminMember.id
+        $kcMemberAId = $kcMemberARecord.id
+        $kcMemberBId = $kcMemberBRecord.id
+
+        $kcListMembersAsMember = Invoke-Api -Method GET -Path "/api/members" -Token $kcMemberAToken
+        Assert-Status "GET /api/members as Keycloak Member -> 403" -Expected 403 -Actual $kcListMembersAsMember.StatusCode
+
+        $kcListBorrowingsAdmin = Invoke-Api -Method GET -Path "/api/borrowings" -Token $kcAdminUserToken
+        Assert-Status "GET /api/borrowings as Keycloak Admin -> 200" -Expected 200 -Actual $kcListBorrowingsAdmin.StatusCode
+
+        $kcListBorrowingsMember = Invoke-Api -Method GET -Path "/api/borrowings" -Token $kcMemberAToken
+        Assert-Status "GET /api/borrowings as Keycloak Member -> 403" -Expected 403 -Actual $kcListBorrowingsMember.StatusCode
+
+        if ($kcMemberAId) {
+            $kcGetOwnMemberA = Invoke-Api -Method GET -Path "/api/members/$kcMemberAId" -Token $kcMemberAToken
+            Assert-Status "GET /api/members/{A} as Keycloak Member A (self) -> 200" -Expected 200 -Actual $kcGetOwnMemberA.StatusCode
+
+            $kcGetOtherMemberA = Invoke-Api -Method GET -Path "/api/members/$kcMemberAId" -Token $kcMemberBToken
+            # This is the specific regression the Phase 3 "Follow-up fix" targeted: a mismatched
+            # id under a Keycloak token used to come back 401 (unauthenticated-looking) instead
+            # of 403 (authenticated but forbidden) before every named policy accepted both schemes.
+            Assert-Status "GET /api/members/{A} as Keycloak Member B (mismatch) -> 403" -Expected 403 -Actual $kcGetOtherMemberA.StatusCode
+
+            $kcGetMemberAAdmin = Invoke-Api -Method GET -Path "/api/members/$kcMemberAId" -Token $kcAdminUserToken
+            Assert-Status "GET /api/members/{A} as Keycloak Admin -> 200" -Expected 200 -Actual $kcGetMemberAAdmin.StatusCode
+        }
+
+        if ($testBookId -and $kcMemberAId -and $kcMemberBId) {
+            $kcBorrowSelf = Invoke-Api -Method POST -Path "/api/borrowings" -Body @{ BookId = $testBookId; MemberId = $kcMemberAId } -Token $kcMemberAToken
+            Assert-Status "POST /api/borrowings self (Keycloak Member A) -> 201" -Expected 201 -Actual $kcBorrowSelf.StatusCode
+            $kcBorrowingA = $kcBorrowSelf.Body.id
+
+            $kcBorrowMismatched = Invoke-Api -Method POST -Path "/api/borrowings" -Body @{ BookId = $testBookId; MemberId = $kcMemberBId } -Token $kcMemberAToken
+            Assert-Status "POST /api/borrowings mismatched MemberId (Keycloak) -> 403" -Expected 403 -Actual $kcBorrowMismatched.StatusCode
+
+            if ($kcBorrowingA) {
+                $kcReturnOther = Invoke-Api -Method POST -Path "/api/borrowings/$kcBorrowingA/return" -Token $kcMemberBToken
+                Assert-Status "POST /api/borrowings/{other}/return as Keycloak Member B -> 403" -Expected 403 -Actual $kcReturnOther.StatusCode
+
+                $kcReturnOwn = Invoke-Api -Method POST -Path "/api/borrowings/$kcBorrowingA/return" -Token $kcMemberAToken
+                Assert-Status "POST /api/borrowings/{own}/return as Keycloak Member A -> 200/204" -Expected 200 -Actual $(if ($kcReturnOwn.StatusCode -eq 204) { 200 } else { $kcReturnOwn.StatusCode })
+            }
+        }
+        else {
+            Write-Host "  ! Skipping Keycloak borrowing tests - no test book / provisioned members available" -ForegroundColor Yellow
+        }
+    }
 }
 finally {
     Write-Section "Cleanup"
@@ -360,6 +638,30 @@ finally {
         $r = Invoke-Api -Method DELETE -Path "/api/members/$($memberB.Id)" -Token $adminToken
         if ($r.StatusCode -in 200, 204) { Write-Host "  Deleted Member B $($memberB.Id)" -ForegroundColor Gray }
         else { Write-Host "  ! Could not delete Member B (status $($r.StatusCode))" -ForegroundColor Yellow }
+    }
+
+    # Deletes the Member rows via the legacy admin token (AdminOnly accepts both schemes since
+    # the Phase 3 follow-up fix, and the legacy JWT's longer expiry is safer to rely on here than
+    # a possibly-stale Keycloak access token from earlier in the run).
+    if ($adminToken) {
+        foreach ($kcId in @($kcAdminMemberId, $kcMemberAId, $kcMemberBId)) {
+            if (-not $kcId) { continue }
+            $r = Invoke-Api -Method DELETE -Path "/api/members/$kcId" -Token $adminToken
+            if ($r.StatusCode -in 200, 204) { Write-Host "  Deleted Keycloak-provisioned Member $kcId" -ForegroundColor Gray }
+            else { Write-Host "  ! Could not delete Keycloak-provisioned Member $kcId (status $($r.StatusCode))" -ForegroundColor Yellow }
+        }
+    }
+
+    if (-not $SkipKeycloak -and $keycloakAdmin -and $keycloakAdminPassword) {
+        try {
+            $kcCleanupToken = Get-KeycloakAdminToken -Username $keycloakAdmin -Password $keycloakAdminPassword
+            Remove-KeycloakUser -AdminToken $kcCleanupToken -UserId $kcAdminUserId
+            Remove-KeycloakUser -AdminToken $kcCleanupToken -UserId $kcMemberAUserId
+            Remove-KeycloakUser -AdminToken $kcCleanupToken -UserId $kcMemberBUserId
+        }
+        catch {
+            Write-Host "  ! Keycloak user cleanup failed: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     }
 
     Write-Section "Summary"

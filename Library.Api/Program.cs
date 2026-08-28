@@ -10,6 +10,7 @@ using Library.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Security.Claims;
@@ -65,22 +66,37 @@ builder.Services
         ValidateAudience = true,
         ValidAudience = keycloakAudience,
         ValidateLifetime = true
-        // IssuerSigningKey intentionally not set: Authority above makes the handler fetch
-        // signing keys from Keycloak's JWKS endpoint automatically.
     };
 });
 
 builder.Services.AddTransient<IClaimsTransformation, KeycloakRoleClaimsTransformation>();
 
+// Every policy accepts both the legacy "Bearer" scheme and "Keycloak" during this coexistence
+// window — old JWTs and Keycloak tokens both work — without flipping the default scheme (that's
+// Phase 4's cutover). See docs/keycloak-authserver-phase3-member-provisioning.md.
+var authSchemes = new[] { JwtBearerDefaults.AuthenticationScheme, "Keycloak" };
+
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.Admin));
-    options.AddPolicy("OwnMember", policy => policy.Requirements.Add(new OwnMemberRequirement()));
-    options.AddPolicy("OwnBorrowing", policy => policy.Requirements.Add(new OwnBorrowingRequirement()));
+    options.DefaultPolicy = new AuthorizationPolicyBuilder(authSchemes)
+        .RequireAuthenticatedUser()
+        .Build();
+
+    options.AddPolicy("AdminOnly", policy =>
+        policy.AddAuthenticationSchemes(authSchemes).RequireRole(Roles.Admin));
+    options.AddPolicy("OwnMember", policy =>
+        policy.AddAuthenticationSchemes(authSchemes).Requirements.Add(new OwnMemberRequirement()));
+    options.AddPolicy("OwnBorrowing", policy =>
+        policy.AddAuthenticationSchemes(authSchemes).Requirements.Add(new OwnBorrowingRequirement()));
 });
 
 builder.Services.AddScoped<IAuthorizationHandler, OwnMemberHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, OwnBorrowingHandler>();
+
+// Phase 8 item: every 401 (missing/invalid token) and 403 (AdminOnly role check,
+// OwnMember/OwnBorrowing ownership mismatch) previously logged nothing. This is the one place
+// that sees every policy's outcome regardless of which handler produced it.
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, LoggingAuthorizationMiddlewareResultHandler>();
 
 // Phase 3 of the Keycloak rollout — JIT Member provisioning.
 // See docs/keycloak-authserver-phase3-member-provisioning.md.
@@ -143,8 +159,12 @@ app.MapMemberEndpoints();
 app.MapBorrowingEndpoints();
 app.MapAuthEndpoints();
 
-// Temporary — Phase 2 verification only, removed once Phase 3's real flow is proven.
-// See docs/keycloak-authserver-phase2-token-validation.md.
+// Originally added as a throwaway Phase 2 verification endpoint (see
+// docs/keycloak-authserver-phase2-token-validation.md), but kept deliberately: it's the
+// cheapest way to (a) trigger MemberProvisioningMiddleware's JIT provisioning for a Keycloak
+// token with no other side effects, and (b) inspect what claims a given Keycloak token actually
+// carries. scripts/test-endpoints.ps1's Keycloak coexistence section and manual Keycloak testing
+// both rely on it now — no longer temporary.
 app.MapGet("/api/keycloak-whoami", (ClaimsPrincipal user) =>
     Results.Ok(user.Claims.Select(c => new { c.Type, c.Value })))
     .RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = "Keycloak" });

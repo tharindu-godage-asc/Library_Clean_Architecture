@@ -52,6 +52,31 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "library-test-cli",
+      "name": "Library automated test tooling",
+      "description": "Used only by scripts/test-endpoints.ps1 to obtain tokens for scripted Keycloak test users. Never used by the real Flutter app - keep directAccessGrantsEnabled off on library-flutter itself. See docs/keycloak-authserver-phase4-prep-test-tooling.md.",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "library-flutter",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     }
   ]
 }
