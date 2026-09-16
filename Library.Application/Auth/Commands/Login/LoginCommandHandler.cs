@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Library.Application.Auth.Commands.Login
 {
+    [Obsolete("Superseded by Keycloak-issued tokens; see docs/keycloak-authserver-phase4-cutover.md")]
     public sealed class LoginCommandHandler
         : ICommandHandler<LoginCommand, LoginResponse>
     {

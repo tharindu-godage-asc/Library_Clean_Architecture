@@ -15,6 +15,15 @@
       {
         "name": "Member",
         "description": "Standard library member"
+      },
+      {
+        "name": "default-roles-library",
+        "description": "Default roles automatically assigned to every newly self-registered user in this realm",
+        "composite": true,
+        "clientRole": false,
+        "composites": {
+          "realm": ["offline_access", "uma_authorization", "Member"]
+        }
       }
     ]
   },

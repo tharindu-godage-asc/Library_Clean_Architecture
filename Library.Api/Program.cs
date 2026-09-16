@@ -36,8 +36,8 @@ var keycloakAudience = builder.Configuration["Keycloak:Audience"];
 builder.Services
     .AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = "Keycloak";
+    options.DefaultChallengeScheme = "Keycloak";
 })
 .AddJwtBearer(options =>
 {
@@ -69,9 +69,10 @@ builder.Services
 
 builder.Services.AddTransient<IClaimsTransformation, KeycloakRoleClaimsTransformation>();
 
-// Every policy accepts both the legacy "Bearer" scheme and "Keycloak" during this coexistence
-// window — old JWTs and Keycloak tokens both work — without flipping the default scheme (that's
-// Phase 4's cutover). See docs/keycloak-authserver-phase3-member-provisioning.md.
+// Phase 4 cutover: "Keycloak" is now the default authenticate/challenge scheme (above), but every
+// policy still explicitly lists both schemes so old, still-valid legacy JWTs keep working
+// unchanged — only the default fallback/challenge behavior changed, not what's accepted.
+// See docs/keycloak-authserver-phase4-cutover.md.
 var authSchemes = new[] { JwtBearerDefaults.AuthenticationScheme, "Keycloak" };
 
 builder.Services.AddAuthorization(options =>

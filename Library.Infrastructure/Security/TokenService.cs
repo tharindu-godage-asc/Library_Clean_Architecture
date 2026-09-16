@@ -8,6 +8,7 @@ using System.Text;
 
 namespace Library.Infrastructure.Services;
 
+[Obsolete("Superseded by Keycloak; see docs/keycloak-authserver-phase4-cutover.md")]
 public class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;

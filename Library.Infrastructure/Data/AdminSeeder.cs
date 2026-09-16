@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Library.Infrastructure.Data
 {
+    [Obsolete("Superseded by Keycloak; see docs/keycloak-authserver-phase4-cutover.md. Still invoked at startup — see Program.cs.")]
     public static class AdminSeeder
     {
         public static async Task SeedAsync(IServiceProvider services)
