@@ -29,8 +29,6 @@ if (string.IsNullOrWhiteSpace(signingKey))
         "Jwt:SigningKey is not configured.");
 }
 
-// Fetch Keycloak settings (Phase 2 of the OAuth Authorization Server rollout —
-// see docs/keycloak-authserver-phase2-token-validation.md)
 var keycloakAuthority = builder.Configuration["Keycloak:Authority"];
 var keycloakAudience = builder.Configuration["Keycloak:Audience"];
 
@@ -54,8 +52,8 @@ builder.Services
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey))
     };
 })
-// Second, additional scheme — validates Keycloak-issued tokens. Not the default yet
-// (that switch happens in Phase 4); the original "Bearer" scheme above is untouched.
+
+
 .AddJwtBearer("Keycloak", options =>
 {
     options.Authority = keycloakAuthority;
