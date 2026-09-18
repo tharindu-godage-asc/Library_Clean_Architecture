@@ -40,6 +40,7 @@
       "serviceAccountsEnabled": false,
       "redirectUris": [
         "com.example.library:/oauthredirect",
+        "com.example.library_1:/oauthredirect",
         "https://oauth.pstmn.io/v1/callback"
       ],
       "webOrigins": [
@@ -86,6 +87,13 @@
           }
         }
       ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "Library Admins",
+      "path": "/Library Admins",
+      "realmRoles": ["Admin"]
     }
   ]
 }

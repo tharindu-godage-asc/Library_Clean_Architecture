@@ -63,7 +63,19 @@ builder.Services
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidAudience = keycloakAudience,
-        ValidateLifetime = true
+        ValidateLifetime = true,
+        // Keycloak stamps a token's "iss" with whatever host:port the client actually used to
+        // reach it, not a fixed value — the Android emulator talks to Keycloak via its 10.0.2.2
+        // host alias (see KeycloakConfig.issuer in the Flutter app), while this API (and
+        // scripts/test-endpoints.ps1) reach the same Keycloak instance via localhost. Without
+        // listing both here, tokens minted through the emulator fail issuer validation (401) even
+        // though Authority above still resolves signing keys fine, since that request comes from
+        // this host, not the emulator.
+        ValidIssuers = new[]
+        {
+            keycloakAuthority,
+            keycloakAuthority?.Replace("localhost", "10.0.2.2")
+        }
     };
 });
 
@@ -142,7 +154,15 @@ if (enableSwagger)
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Skipped in Development: the Flutter client on the Android emulator talks to
+// this API over plain HTTP (10.0.2.2:5281) specifically to avoid the
+// self-signed dev HTTPS cert being untrusted on-device — a redirect back to
+// HTTPS here would just reproduce that same failure. Mirrors how
+// KeycloakConfig/AppAuth already treat Keycloak's own HTTP endpoint in dev.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseMiddleware<MemberProvisioningMiddleware>();

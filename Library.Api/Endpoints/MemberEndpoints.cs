@@ -1,6 +1,7 @@
 ﻿using Library.Api.Common.Filters;
 using Library.Api.Common.Http;
 using Library.Application.Contracts.Members;
+using Library.Application.Interfaces;
 using Library.Application.Members.Commands.CreateMember;
 using Library.Application.Members.Commands.DeleteMember;
 using Library.Application.Members.Commands.UpdateMember;
@@ -28,6 +29,51 @@ namespace Library.Api.Endpoints
                 return Results.Ok(members);
             })
             .RequireAuthorization("AdminOnly");
+
+            // Keycloak tokens carry no memberId claim of their own — the caller can't fill in
+            // {id:guid} for "my own profile" the way OwnMember-policy routes assume, since the
+            // JIT-provisioned Member.Id never reaches the client otherwise. These resolve the id
+            // server-side from ICurrentUserService (set by MemberProvisioningMiddleware) instead.
+            group.MapGet("/me", async (
+                ICurrentUserService currentUser,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                if (currentUser.MemberId is not { } memberId)
+                    return Results.Unauthorized();
+
+                var result = await sender.Send(new GetMemberByIdQuery(memberId), cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
+            })
+            .RequireAuthorization();
+
+            group.MapPut("/me", async (
+                UpdateMemberRequest request,
+                ICurrentUserService currentUser,
+                ISender sender,
+                CancellationToken cancellationToken) =>
+            {
+                if (currentUser.MemberId is not { } memberId)
+                    return Results.Unauthorized();
+
+                var command = new UpdateMemberCommand(
+                    memberId,
+                    request.Name,
+                    request.Email,
+                    request.PhoneNumber,
+                    request.IsActive);
+
+                var result = await sender.Send(command, cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.Ok(result.Value)
+                    : result.ToProblemDetails();
+            })
+            .AddEndpointFilter<ValidationFilter<UpdateMemberRequest>>()
+            .RequireAuthorization();
 
             group.MapGet("/{id:guid}", async (
                 Guid id,
