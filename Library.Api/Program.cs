@@ -7,6 +7,7 @@ using Library.Application.Identity;
 using Library.Application.Interfaces;
 using Library.Infrastructure;
 using Library.Infrastructure.Data;
+using Library.ServiceDefaults;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;

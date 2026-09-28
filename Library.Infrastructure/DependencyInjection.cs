@@ -2,6 +2,7 @@
 using Library.Application.Interfaces;
 using Library.Infrastructure.Data;
 using Library.Infrastructure.Repositories;
+using Library.Infrastructure.Security;
 using Library.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

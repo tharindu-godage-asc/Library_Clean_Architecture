@@ -6,7 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace Library.Infrastructure.Services;
+namespace Library.Infrastructure.Security;
 
 [Obsolete("Superseded by Keycloak; see docs/keycloak-authserver-phase4-cutover.md")]
 public class TokenService : ITokenService

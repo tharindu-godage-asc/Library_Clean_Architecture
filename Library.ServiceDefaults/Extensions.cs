@@ -9,7 +9,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
-namespace Microsoft.Extensions.Hosting
+namespace Library.ServiceDefaults
 {
     public static class Extensions
     {
