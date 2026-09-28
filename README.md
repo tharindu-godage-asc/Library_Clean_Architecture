@@ -162,6 +162,31 @@ but contain no tests yet. Run them with:
 dotnet test
 ```
 
+### API integration tests (Playwright)
+
+`tests/api/` contains chained, end-to-end API integration tests (TypeScript,
+`@playwright/test`, `request` fixture — no browser) covering two full user journeys:
+
+- `member-journey.spec.ts` — Register → Login → View Book details → Borrow Book →
+  View Borrowings → Return Book → View Profile → Update Profile.
+- `admin-journey.spec.ts` — Admin Login → Create Book → Update Book → Delete Book →
+  View all Borrowings → View all Users → View User by Id → Delete User.
+
+Prerequisites: `postgres-db` running and `Library.Api` reachable at
+`https://localhost:7282` (e.g. via the Aspire AppHost), plus a seeded admin account
+(`AdminSeed:Email`/`AdminSeed:Password`, see `Library.Infrastructure/Data/AdminSeeder.cs`).
+
+```bash
+cd tests/api
+cp .env.example .env   # fill in ADMIN_EMAIL / ADMIN_PASSWORD
+npm install
+npx playwright test              # run both journeys
+npx playwright test --ui         # interactive step-through
+npx playwright show-report       # view the HTML report from the last run
+```
+
+See `_specs/api-journey-tests.md` for the full spec and design rationale.
+
 ## To be done
 
 - **Field naming** differs slightly from the assessment brief in a couple of places:

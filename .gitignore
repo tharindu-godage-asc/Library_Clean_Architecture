@@ -367,3 +367,9 @@ docs/
 
 # Local secrets (real values) — see .env.example for the template
 .env
+
+# Playwright (tests/api) — install artifacts and run output, not source
+tests/api/node_modules/
+tests/api/test-results/
+tests/api/playwright-report/
+tests/api/playwright/.cache/
