@@ -1,0 +1,250 @@
+{
+  "info": {
+    "name": "Keycloak Role Diagnostics (library realm)",
+    "description": "Read-only Admin REST API calls that pin down *where* a role in a decoded access token actually comes from (direct user assignment vs. group vs. composite role vs. default roles), instead of guessing via the Keycloak console UI. Written while chasing why `realm-admin` kept showing up in `resource_access.realm-management.roles` for `admin@gmail.com` even after the group and the `Admin` role's composites looked clean — see `TODO/keycloak-admin-token-testing.md`, \"Still outstanding → 1. realm-admin is still showing up\", for the full narrative.\n\nRun request 1 first to mint a master token, then any of 2-8 in any order — they're independent read-only lookups, not a pipeline. `masterToken` expires in 60s, so re-run request 1 if it's been idle.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "keycloakBaseUrl", "value": "http://localhost:8081", "type": "string" },
+    { "key": "realm", "value": "library", "type": "string" },
+    { "key": "masterAdminUser", "value": "admin", "type": "string" },
+    { "key": "masterAdminPassword", "value": "", "type": "secret", "description": "KEYCLOAK_ADMIN_PASSWORD from your local .env" },
+    { "key": "masterToken", "value": "", "type": "secret" },
+    { "key": "roleName", "value": "Admin", "type": "string", "description": "Realm role to inspect composites for." },
+    { "key": "defaultRolesName", "value": "default-roles-library", "type": "string", "description": "Realm's default composite role. Keycloak names this default-roles-<realm>." },
+    { "key": "groupName", "value": "Library Admins", "type": "string" },
+    { "key": "groupId", "value": "", "type": "string", "description": "Set automatically by request 4." },
+    { "key": "userId", "value": "cae502eb-6f82-4874-a243-06d673ce836c", "type": "string", "description": "admin@gmail.com in the library realm. Swap this to diagnose a different user." }
+  ],
+  "item": [
+    {
+      "name": "1. Get master admin token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "password" },
+            { "key": "client_id", "value": "admin-cli" },
+            { "key": "username", "value": "{{masterAdminUser}}" },
+            { "key": "password", "value": "{{masterAdminPassword}}" }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/realms/master/protocol/openid-connect/token",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["realms", "master", "protocol", "openid-connect", "token"]
+        },
+        "description": "Master-realm token for the Keycloak bootstrap admin. Drives every Admin REST API call below — it is not itself a token you'd send to Library.Api."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('got master token', () => pm.expect(body.access_token).to.be.a('string'));",
+              "pm.collectionVariables.set('masterToken', body.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get {{roleName}} role's composites",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/roles/{{roleName}}/composites",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "roles", "{{roleName}}", "composites"]
+        },
+        "description": "Lists every role nested under {{roleName}} (its 'Associated roles' tab). If `realm-admin` (client realm-management) shows up here, an earlier attempt to remove it from Admin's Associated roles in the console didn't actually persist — redo it and re-run this request to confirm, rather than trusting the console screen alone."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const composites = pm.response.json();",
+              "pm.test('response is an array', () => pm.expect(composites).to.be.an('array'));",
+              "const realmAdmin = composites.find(r => r.name === 'realm-admin');",
+              "console.log('{{roleName}} composites:', composites.map(r => `${r.clientRole ? r.containerId + ':' : ''}${r.name}`));",
+              "if (realmAdmin) console.warn('realm-admin is still nested under {{roleName}} — this is the leak.');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get {{defaultRolesName}} composites",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/roles/{{defaultRolesName}}/composites",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "roles", "{{defaultRolesName}}", "composites"]
+        },
+        "description": "Every user in the realm gets this composite role automatically, so if a stray realm-management role ever got nested here, it would explain a leak that has nothing to do with the Admin role or the Library Admins group at all. Expected to only contain offline_access / uma_authorization related roles."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const composites = pm.response.json();",
+              "pm.test('response is an array', () => pm.expect(composites).to.be.an('array'));",
+              "console.log('{{defaultRolesName}} composites:', composites.map(r => `${r.clientRole ? r.containerId + ':' : ''}${r.name}`));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Find {{groupName}} group id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/groups?search={{groupName}}",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "groups"],
+          "query": [{ "key": "search", "value": "{{groupName}}" }]
+        },
+        "description": "Resolves {{groupName}} to its id for request 5."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const groups = pm.response.json();",
+              "pm.test('found {{groupName}}', () => pm.expect(groups.length).to.be.above(0));",
+              "if (groups.length > 0) pm.collectionVariables.set('groupId', groups[0].id);",
+              "if (groups.length > 1) console.warn('multiple groups matched search, using the first:', groups.map(g => g.path));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Get {{groupName}} group's role-mappings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/groups/{{groupId}}/role-mappings",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "groups", "{{groupId}}", "role-mappings"]
+        },
+        "description": "Full role-mapping picture for the group itself: realmMappings (direct realm roles on the group) plus clientMappings. If realm-management/realm-admin appears directly here (not just nested under Admin), the group was reassigned the wrong role again."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const mappings = pm.response.json();",
+              "console.log('{{groupName}} realmMappings:', (mappings.realmMappings || []).map(r => r.name));",
+              "console.log('{{groupName}} clientMappings:', JSON.stringify(mappings.clientMappings || {}));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Get user's group memberships",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/users/{{userId}}/groups",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "users", "{{userId}}", "groups"]
+        },
+        "description": "Every group {{userId}} belongs to. If anything besides {{groupName}} shows up, check that group's role-mappings too — request 5's pattern applies to any group id found here."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const groups = pm.response.json();",
+              "pm.test('response is an array', () => pm.expect(groups).to.be.an('array'));",
+              "console.log('user groups:', groups.map(g => g.path));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Get user's direct realm role-mappings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/users/{{userId}}/role-mappings/realm",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "users", "{{userId}}", "role-mappings", "realm"]
+        },
+        "description": "Only realm roles assigned *directly* to the user — no group or composite inheritance, unlike the console's Role mapping tab which also lists inherited roles (greyed out, marked Inherited: True) in the same table. This is the authoritative check for whether the console's 'Unassign' attempts actually had anything to remove."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const roles = pm.response.json();",
+              "pm.test('response is an array', () => pm.expect(roles).to.be.an('array'));",
+              "console.log('user direct realm roles:', roles.map(r => r.name));",
+              "if (roles.length === 0) console.log('No direct realm roles at all — confirms everything the user has comes from group/composite membership, not a direct assignment.');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Get user's full effective role-mappings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/users/{{userId}}/role-mappings",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "users", "{{userId}}", "role-mappings"]
+        },
+        "description": "The full picture in one call: realmMappings (direct realm roles) plus clientMappings (direct client roles, e.g. a stray realm-management/realm-admin assignment) for {{userId}}. Cross-check this against the decoded token's resource_access — anything in the token that isn't explained by this response plus requests 2, 3, 5 and 6 above means something even less obvious is going on (stale session/cache, a client scope's own role-mapping protocol mappers, etc.)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const mappings = pm.response.json();",
+              "console.log('user realmMappings:', (mappings.realmMappings || []).map(r => r.name));",
+              "console.log('user clientMappings:', JSON.stringify(mappings.clientMappings || {}));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

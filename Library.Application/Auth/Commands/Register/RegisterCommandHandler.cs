@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Library.Application.Auth.Commands.Register
 {
+    [Obsolete("Superseded by Keycloak-hosted registration + JIT Member provisioning; see docs/keycloak-authserver-phase4-cutover.md")]
     public sealed class RegisterCommandHandler
         : ICommandHandler<RegisterCommand, MemberResponse>
     {

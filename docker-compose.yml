@@ -2,8 +2,8 @@ version: '3.9'
 
 services:
   postgres:
-    image: postgres:16
-    container_name: library-db2
+    image: postgres:latest
+    container_name: postgres-db
     restart: always
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -12,7 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
 
   library-api:
     build:
@@ -31,5 +31,26 @@ services:
     ports:
       - "8080:8080"
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: library-keycloak
+    restart: always
+    command: start-dev --import-realm
+    depends_on:
+      - postgres
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloakdb
+      KC_DB_USERNAME: ${DB_USER}
+      KC_DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import
+
 volumes:
   pgdata:
+    external: true
+    name: cc2794e5191cdb3a55bd1e46ad2ede5b85451a3d86d475643be3bce99225436a

@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "Keycloak Admin Token (headless)",
+    "description": "Chains the Keycloak Admin REST API to mint a `library`-realm Admin access token without going through the browser OAuth popup. Useful when you don't know/remember the Admin user's Keycloak password. See docs/keycloak-manual-testing-postman-guide.md, \"Headless admin token (no browser login)\" section, for the walkthrough and prerequisites.\n\nRun the 5 requests in this folder top to bottom (Postman's Runner works too). Each one hands the next its inputs via collection variables set in its Tests tab — nothing to copy/paste by hand except filling in the two secret variables below before your first run.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "keycloakBaseUrl", "value": "http://localhost:8081", "type": "string" },
+    { "key": "realm", "value": "library", "type": "string" },
+    { "key": "testClientId", "value": "library-test-cli", "type": "string" },
+    { "key": "masterAdminUser", "value": "admin", "type": "string" },
+    { "key": "masterAdminPassword", "value": "", "type": "secret", "description": "KEYCLOAK_ADMIN_PASSWORD from your local .env" },
+    { "key": "tempAdminPassword", "value": "TempAdminPass1!", "type": "secret", "description": "Password this run will set on the library-realm Admin user. Change if you don't want to overwrite an existing known password." },
+    { "key": "masterToken", "value": "", "type": "secret" },
+    { "key": "adminUserId", "value": "", "type": "string" },
+    { "key": "adminUsername", "value": "", "type": "string" },
+    { "key": "testClientInternalId", "value": "", "type": "string" },
+    { "key": "testClientSecret", "value": "", "type": "secret" },
+    { "key": "adminAccessToken", "value": "", "type": "secret" }
+  ],
+  "item": [
+    {
+      "name": "1. Get master admin token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "password" },
+            { "key": "client_id", "value": "admin-cli" },
+            { "key": "username", "value": "{{masterAdminUser}}" },
+            { "key": "password", "value": "{{masterAdminPassword}}" }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/realms/master/protocol/openid-connect/token",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["realms", "master", "protocol", "openid-connect", "token"]
+        },
+        "description": "Master-realm token for the Keycloak bootstrap admin (KEYCLOAK_ADMIN / KEYCLOAK_ADMIN_PASSWORD in .env). Used to drive the Admin REST API in the next steps, not as an API bearer token itself."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('got master token', () => pm.expect(body.access_token).to.be.a('string'));",
+              "pm.collectionVariables.set('masterToken', body.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Find library-realm Admin user",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/roles/Admin/users",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "roles", "Admin", "users"]
+        },
+        "description": "Lists every user with the realm role 'Admin' assigned directly. If this returns an empty array, no one currently holds the role directly (check for a composite/default-role grant instead) — see the doc section for that case."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const users = pm.response.json();",
+              "pm.test('at least one Admin user found', () => pm.expect(users.length).to.be.above(0));",
+              "if (users.length > 0) {",
+              "  pm.collectionVariables.set('adminUserId', users[0].id);",
+              "  pm.collectionVariables.set('adminUsername', users[0].username);",
+              "  console.log('Using admin user:', users[0].username, users[0].id);",
+              "  if (users.length > 1) console.log('Note: multiple Admin users found, picked the first:', users.map(u => u.username));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Reset that user's password",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"password\",\n  \"value\": \"{{tempAdminPassword}}\",\n  \"temporary\": false\n}"
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/users/{{adminUserId}}/reset-password",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "users", "{{adminUserId}}", "reset-password"]
+        },
+        "description": "Overwrites the Admin user's existing Keycloak password with tempAdminPassword. Local-dev-only action — this mutates a real user record. Skip this request if you already know a working password for the user found in step 2."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('password reset accepted (204)', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Get library-test-cli internal id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/clients?clientId={{testClientId}}",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "clients"],
+          "query": [{ "key": "clientId", "value": "{{testClientId}}" }]
+        },
+        "description": "library-test-cli is the confidential, direct-access-grants-enabled client reserved for scripted token requests like this one — see docs/keycloak-authserver-phase4-prep-test-tooling.md. Never enable password grants on library-flutter itself."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const clients = pm.response.json();",
+              "pm.test('found library-test-cli', () => pm.expect(clients.length).to.equal(1));",
+              "pm.collectionVariables.set('testClientInternalId', clients[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Get library-test-cli secret",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{masterToken}}" }] },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/admin/realms/{{realm}}/clients/{{testClientInternalId}}/client-secret",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["admin", "realms", "{{realm}}", "clients", "{{testClientInternalId}}", "client-secret"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const secret = pm.response.json();",
+              "pm.test('got client secret', () => pm.expect(secret.value).to.be.a('string'));",
+              "pm.collectionVariables.set('testClientSecret', secret.value);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Get admin access token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "password" },
+            { "key": "client_id", "value": "{{testClientId}}" },
+            { "key": "client_secret", "value": "{{testClientSecret}}" },
+            { "key": "username", "value": "{{adminUsername}}" },
+            { "key": "password", "value": "{{tempAdminPassword}}" }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": ["{{keycloakBaseUrl}}"],
+          "path": ["realms", "{{realm}}", "protocol", "openid-connect", "token"]
+        },
+        "description": "The payoff: a real library-realm access token for the Admin user, carrying 'Admin' in realm_access.roles. Use it as the Bearer token against the Library API."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.test('got admin access token', () => pm.expect(body.access_token).to.be.a('string'));",
+              "pm.collectionVariables.set('adminAccessToken', body.access_token);",
+              "console.log('Admin access token:', body.access_token);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

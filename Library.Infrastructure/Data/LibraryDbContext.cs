@@ -52,6 +52,11 @@ namespace Library.Infrastructure.Data
                 email.HasIndex(e => e.Value)
                     .IsUnique();
             });
+
+            modelBuilder.Entity<Member>()
+                .HasIndex(m => m.KeycloakId)
+                .IsUnique()
+                .HasFilter("\"KeycloakId\" IS NOT NULL");
         }
     }
 }

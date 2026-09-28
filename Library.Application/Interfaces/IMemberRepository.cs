@@ -8,6 +8,8 @@ namespace Library.Application.Interfaces
 
         Task<Member?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
 
+        Task<Member?> GetByKeycloakIdAsync(string keycloakId, CancellationToken cancellationToken = default);
+
         Task<IEnumerable<Member>> GetAllAsync(CancellationToken cancellationToken = default);
 
         Task AddAsync(Member member, CancellationToken cancellationToken = default);
